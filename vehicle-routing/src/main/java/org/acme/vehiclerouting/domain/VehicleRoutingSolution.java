@@ -40,6 +40,13 @@ public class VehicleRoutingSolution {
     public VehicleRoutingSolution() {
     }
 
+    public VehicleRoutingSolution(String name, VehicleRoutingSolution old) {
+        this(name, old.locationList, old.depotList,
+                old.vehicleList.stream().map(Vehicle::new).collect(Collectors.toList()), old.customerList,
+                old.southWestCorner, old.northEastCorner);
+        this.score = old.score;
+    }
+
     public VehicleRoutingSolution(String name,
             List<Location> locationList, List<Depot> depotList, List<Vehicle> vehicleList, List<Customer> customerList,
             Location southWestCorner, Location northEastCorner) {
@@ -131,6 +138,6 @@ public class VehicleRoutingSolution {
     }
 
     public long getFixCost() {
-        return getVehicleList().stream().filter(v->v.getTotalDemand()>0).mapToLong(Vehicle::getFixCost).sum();
+        return getVehicleList().stream().filter(v -> v.getTotalDemand() > 0).mapToLong(Vehicle::getFixCost).sum();
     }
 }

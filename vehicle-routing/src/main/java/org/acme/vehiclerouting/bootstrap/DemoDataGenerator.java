@@ -1,12 +1,12 @@
 package org.acme.vehiclerouting.bootstrap;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-
-import io.quarkus.runtime.StartupEvent;
 import org.acme.vehiclerouting.domain.Location;
 import org.acme.vehiclerouting.domain.VehicleRoutingSolution;
 import org.acme.vehiclerouting.persistence.VehicleRoutingSolutionRepository;
+
+import io.quarkus.runtime.StartupEvent;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 @ApplicationScoped
 public class DemoDataGenerator {
@@ -33,7 +33,7 @@ public class DemoDataGenerator {
                 .setSouthWestCorner(new Location(0L, 49.43069, 11.03332))
                 .setNorthEastCorner(new Location(0L, 49.49069, 11.13332))
                 .build();
-
-        repository.update(problem);
+        // repository.add(problem);
+        repository.getRefSet().addAll(SequentialInsertion.solve(problem, 1));
     }
 }

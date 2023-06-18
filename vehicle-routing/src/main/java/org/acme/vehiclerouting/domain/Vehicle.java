@@ -21,6 +21,11 @@ public class Vehicle {
     public Vehicle() {
     }
 
+    public Vehicle(Vehicle old) {
+        this(old.id, old.capacity, old.depot, old.fixCost);
+        this.customerList.addAll(old.customerList);
+    }
+
     public Vehicle(long id, int capacity, Depot depot, int fixCost) {
         this.id = id;
         this.capacity = capacity;
@@ -136,6 +141,26 @@ public class Vehicle {
         }
 
         return noViolations;
+    }
+
+    public boolean isServiceTimeViolated() {
+        if (customerList.isEmpty()) {
+            return false;
+        }
+
+        long currentTime = 0;
+        Location previousLocation = depot.getLocation();
+
+        for (Customer customer : customerList) {
+            currentTime += previousLocation.getDistanceTo(customer.getLocation());
+            if (currentTime > customer.getEndServiceWindow()) {
+                return true;
+            }
+            currentTime += Math.max(currentTime, customer.getBeginServiceWindow()) + customer.getServiceTime();
+            previousLocation = customer.getLocation();
+        }
+
+        return false;
     }
 
     public long getTotalTime() {
