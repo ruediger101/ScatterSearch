@@ -1,6 +1,5 @@
 package org.acme.vehiclerouting.bootstrap;
 
-import java.sql.Time;
 import java.util.List;
 import java.util.PrimitiveIterator;
 import java.util.Random;
