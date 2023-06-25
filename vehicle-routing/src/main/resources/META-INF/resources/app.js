@@ -196,7 +196,7 @@ const showProblem = ({ solution, scoreExplanation, isSolving }) => {
   $('[data-toggle="tooltip-load"]').tooltip('dispose');
   vehiclesTable.children().remove();
   solution.vehicleList.forEach((vehicle) => {
-    const { id, capacity, totalDemand, totalDistanceMeters, totalTime } = vehicle;
+    const { id, capacity, totalDemand, totalDistanceMeters, totalTime, noCustomers } = vehicle;
     const percentage = totalDemand / capacity * 100;
     const color = colorByVehicle(vehicle);
     const colorIfUsed = color;
@@ -214,6 +214,7 @@ const showProblem = ({ solution, scoreExplanation, isSolving }) => {
             <div class="progress-bar" role="progressbar" style="width: ${percentage}%">${totalDemand}/${capacity}</div>
           </div>
         </td>
+        <td>${noCustomers}</td>
         <td>${formatDistance(totalDistanceMeters)}</td>
         <td>${totalTime}</td>
         <td>
