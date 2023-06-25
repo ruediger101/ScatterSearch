@@ -90,7 +90,7 @@ public class Vehicle {
             return Collections.emptyList();
         }
 
-        List<Location> route = new ArrayList<Location>();
+        List<Location> route = new ArrayList<>();
 
         route.add(depot.getLocation());
         for (Customer customer : customerList) {

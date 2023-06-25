@@ -56,22 +56,18 @@ public class SolverResource {
         return statusFromSolution(s);
     }
 
-    private static boolean solve;
-
     @POST
     @Path("solve")
     public void solve() {
-        solve = true;
         Optional<VehicleRoutingSolution> maybeSolution = repository.getCurrentSolution();
-        maybeSolution.ifPresent(
-                vehicleRoutingSolution -> solverManager.solveAndListen(PROBLEM_ID, id -> vehicleRoutingSolution,
-                        repository::setCurrentSolution, (problemId, throwable) -> solverError.set(throwable)));
+            maybeSolution.ifPresent(
+                    vehicleRoutingSolution -> solverManager.solveAndListen(PROBLEM_ID, id -> vehicleRoutingSolution,
+                            repository::setCurrentSolution, (problemId, throwable) -> solverError.set(throwable)));
     }
 
     @POST
     @Path("stopSolving")
     public void stopSolving() {
-        solve = false;
         solverManager.terminateEarly(PROBLEM_ID);
     }
 }
