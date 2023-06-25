@@ -3,18 +3,18 @@ package org.acme.vehiclerouting.rest;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.acme.vehiclerouting.domain.VehicleRoutingSolution;
+import org.acme.vehiclerouting.persistence.VehicleRoutingSolutionRepository;
+import org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore;
+import org.optaplanner.core.api.solver.SolutionManager;
+import org.optaplanner.core.api.solver.SolverManager;
+
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-
-import org.acme.vehiclerouting.domain.VehicleRoutingSolution;
-import org.acme.vehiclerouting.persistence.VehicleRoutingSolutionRepository;
-import org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore;
-import org.optaplanner.core.api.solver.SolutionManager;
-import org.optaplanner.core.api.solver.SolverManager;
 
 @Path("/vrp")
 @Produces(MediaType.APPLICATION_JSON)
@@ -50,24 +50,28 @@ public class SolverResource {
             throw new RuntimeException("Solver failed", throwable);
         });
 
-        Optional<VehicleRoutingSolution> s1 = repository.solution();
+        Optional<VehicleRoutingSolution> s1 = repository.getCurrentSolution();
 
         VehicleRoutingSolution s = s1.orElse(VehicleRoutingSolution.empty());
         return statusFromSolution(s);
     }
 
+    private static boolean solve;
+
     @POST
     @Path("solve")
     public void solve() {
-        Optional<VehicleRoutingSolution> maybeSolution = repository.solution();
+        solve = true;
+        Optional<VehicleRoutingSolution> maybeSolution = repository.getCurrentSolution();
         maybeSolution.ifPresent(
                 vehicleRoutingSolution -> solverManager.solveAndListen(PROBLEM_ID, id -> vehicleRoutingSolution,
-                        repository::update, (problemId, throwable) -> solverError.set(throwable)));
+                        repository::setCurrentSolution, (problemId, throwable) -> solverError.set(throwable)));
     }
 
     @POST
     @Path("stopSolving")
     public void stopSolving() {
+        solve = false;
         solverManager.terminateEarly(PROBLEM_ID);
     }
 }

@@ -34,6 +34,6 @@ public class DemoDataGenerator {
                 .setNorthEastCorner(new Location(0L, 49.49069, 11.13332))
                 .build();
         // repository.add(problem);
-        repository.getRefSet().addAll(SequentialInsertion.solve(problem, 1));
+        repository.addAll(SequentialInsertion.solve(problem, 1));
     }
 }
