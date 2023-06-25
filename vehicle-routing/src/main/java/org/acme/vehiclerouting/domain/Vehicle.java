@@ -58,6 +58,10 @@ public class Vehicle {
         this.depot = depot;
     }
 
+    public int getNoCustomers() {
+        return customerList.size();
+    }
+
     public List<Customer> getCustomerList() {
         return customerList;
     }
