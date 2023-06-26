@@ -163,7 +163,9 @@ const depotPopupContent = (depot, color) => `<h5>Depot ${depot.id}</h5>
 </ul>`;
 
 const customerPopupContent = (customer) => `<h5>Customer ${customer.id}</h5>
-Demand: ${customer.demand}`;
+Demand: ${customer.demand}<br>
+TimeWindow: ${customer.beginServiceWindow} - ${customer.endServiceWindow}<br>
+ServiceTime: ${customer.serviceTime}`;
 
 const getDepotMarker = ({ id, location }) => {
   let marker = depotByIdMap.get(id);
@@ -196,7 +198,7 @@ const showProblem = ({ solution, scoreExplanation, isSolving }) => {
   $('[data-toggle="tooltip-load"]').tooltip('dispose');
   vehiclesTable.children().remove();
   solution.vehicleList.forEach((vehicle) => {
-    const { id, capacity, totalDemand, totalDistanceMeters, totalTime, noCustomers } = vehicle;
+    const { id, capacity, totalDemand, totalDistanceMeters, totalTime, noCustomers, customerIds} = vehicle;
     const percentage = totalDemand / capacity * 100;
     const color = colorByVehicle(vehicle);
     const colorIfUsed = color;
@@ -214,7 +216,7 @@ const showProblem = ({ solution, scoreExplanation, isSolving }) => {
             <div class="progress-bar" role="progressbar" style="width: ${percentage}%">${totalDemand}/${capacity}</div>
           </div>
         </td>
-        <td>${noCustomers}</td>
+        <td>${noCustomers}: ${customerIds.toString()}</td>
         <td>${formatDistance(totalDistanceMeters)}</td>
         <td>${totalTime}</td>
         <td>

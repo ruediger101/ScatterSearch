@@ -3,6 +3,8 @@ package org.acme.vehiclerouting.domain;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import org.optaplanner.core.api.domain.entity.PlanningEntity;
 import org.optaplanner.core.api.domain.variable.PlanningListVariable;
@@ -60,6 +62,10 @@ public class Vehicle {
 
     public int getNoCustomers() {
         return customerList.size();
+    }
+
+    public List<Long> getCustomerIds() {
+        return customerList.stream().map(Customer::getId).collect(Collectors.toList());
     }
 
     public List<Customer> getCustomerList() {
