@@ -27,6 +27,24 @@ public class Customer {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o instanceof Customer)
+            return id == ((Customer) o).getId();
+        else
+            return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 31 * hash + (int) id;
+        return hash;
+    }
+
     public long getId() {
         return id;
     }

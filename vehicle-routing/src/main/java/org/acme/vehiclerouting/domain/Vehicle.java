@@ -3,7 +3,6 @@ package org.acme.vehiclerouting.domain;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.optaplanner.core.api.domain.entity.PlanningEntity;
@@ -19,6 +18,34 @@ public class Vehicle {
 
     @PlanningListVariable
     private List<Customer> customerList;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (!(o instanceof Vehicle)) {
+            return false;
+        }
+        Vehicle other = (Vehicle) o;
+
+        return (depot == null ? -1 : depot.getId()) == (other.getDepot() == null ? -1 : other.getDepot().getId())
+                && capacity == other.getCapacity()
+                && fixCost == other.getFixCost()
+                && (this.getCustomerIds() == null ? Collections.emptyList() : this.getCustomerIds())
+                        .equals(other.getCustomerIds());
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 31 * hash + (depot == null ? 0 : depot.hashCode());
+        hash = 31 * hash + capacity;
+        hash = 31 * hash + (customerList == null ? 0 : customerList.hashCode());
+        hash = 31 * hash + fixCost;
+        return hash;
+    }
 
     public Vehicle() {
     }

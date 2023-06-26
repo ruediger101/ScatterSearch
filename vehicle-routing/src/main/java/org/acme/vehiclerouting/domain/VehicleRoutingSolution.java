@@ -1,6 +1,7 @@
 package org.acme.vehiclerouting.domain;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,6 +36,52 @@ public class VehicleRoutingSolution {
 
     private Location southWestCorner;
     private Location northEastCorner;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (!(o instanceof VehicleRoutingSolution))
+            return false;
+
+        VehicleRoutingSolution other = ((VehicleRoutingSolution) o);
+
+        List<Long> d1 = depotList == null ? Collections.emptyList()
+                : depotList.stream().map(Depot::getId).sorted().collect(Collectors.toList());
+        List<Long> d2 = other.getDepotList() == null ? Collections.emptyList()
+                : other.getDepotList().stream().map(Depot::getId).sorted().collect(Collectors.toList());
+
+        boolean result = d1.equals(d2);
+        if (!result)
+            return false;
+
+        List<Vehicle> v1 = vehicleList == null ? Collections.emptyList()
+                : vehicleList.stream()
+                        .filter(v -> !v.getCustomerList().isEmpty())
+                        .sorted((i, j) -> Long.compare(i.getCustomerIds().get(0), j.getCustomerIds().get(0)))
+                        .collect(Collectors.toList());
+        List<Vehicle> v2 = other == null ? Collections.emptyList()
+                : other.getVehicleList().stream()
+                        .filter(v -> !v.getCustomerList().isEmpty())
+                        .sorted((i, j) -> Long.compare(i.getCustomerIds().get(0), j.getCustomerIds().get(0)))
+                        .collect(Collectors.toList());
+
+        return v1.equals(v2);
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 31 * hash + (depotList == null ? 0
+                : depotList.stream().map(Depot::getId).sorted().collect(Collectors.toList()).hashCode());
+        hash = 31 * hash + (vehicleList == null ? 0
+                : vehicleList.stream()
+                        .filter(v -> !v.getCustomerList().isEmpty())
+                        .sorted((i, j) -> Long.compare(i.getCustomerIds().get(0), j.getCustomerIds().get(0)))
+                        .collect(Collectors.toList()).hashCode());
+        return hash;
+    }
 
     public VehicleRoutingSolution() {
     }
