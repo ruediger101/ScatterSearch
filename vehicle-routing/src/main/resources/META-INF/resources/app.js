@@ -227,6 +227,18 @@ const showProblem = ({ solution, scoreExplanation, isSolving }) => {
   depotsTable.children().remove();
   solution.depotList.forEach((depot) => {
     const { id } = depot;
+    const vehicles = solution.vehicleList;
+    let noVehicles = 0;
+    vehicles.forEach((vehicle) => {
+      if(vehicle.depot.id === id)
+        noVehicles++;
+    });
+    const usedVehicles = solution.usedVehicleList;
+    let noUsedVehicles = 0;
+    usedVehicles.forEach((vehicle) => {
+      if(vehicle.depot.id === id)
+      noUsedVehicles++;
+    });
     const color = colorByDepot(depot);
     const icon = defaultIcon;
     const marker = getDepotMarker(depot);
@@ -235,7 +247,7 @@ const showProblem = ({ solution, scoreExplanation, isSolving }) => {
     depotsTable.append(`<tr>
       <td><i class="fas fa-crosshairs" id="crosshairs-${id}"
       style="background-color: ${color}; display: inline-block; width: 1rem; height: 1rem; text-align: center">
-      </i></td><td>Depot ${id}</td>
+      </i></td><td>Depot ${id}: ${noUsedVehicles}/${noVehicles} vehicles in use</td>
       </tr>`);
   });
   // Customers
