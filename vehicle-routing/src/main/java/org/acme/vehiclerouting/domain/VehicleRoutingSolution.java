@@ -98,8 +98,8 @@ public class VehicleRoutingSolution {
         return vehicleList;
     }
 
-    public List<Vehicle> getUsedVehicleList(){
-        return vehicleList.stream().filter(v-> !v.getCustomerList().isEmpty()).collect(Collectors.toList());
+    public List<Vehicle> getUsedVehicleList() {
+        return vehicleList.stream().filter(v -> !v.getCustomerList().isEmpty()).collect(Collectors.toList());
     }
 
     public void setVehicleList(List<Vehicle> vehicleList) {
