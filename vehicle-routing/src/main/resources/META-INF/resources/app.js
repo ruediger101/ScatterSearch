@@ -197,7 +197,7 @@ const showProblem = ({ solution, scoreExplanation, isSolving }) => {
   // Vehicles
   $('[data-toggle="tooltip-load"]').tooltip('dispose');
   vehiclesTable.children().remove();
-  solution.vehicleList.forEach((vehicle) => {
+  solution.usedVehicleList.forEach((vehicle) => {
     const { id, capacity, totalDemand, totalDistanceMeters, totalTime, noCustomers, customerIds} = vehicle;
     const percentage = totalDemand / capacity * 100;
     const color = colorByVehicle(vehicle);
@@ -244,7 +244,7 @@ const showProblem = ({ solution, scoreExplanation, isSolving }) => {
   });
   // Route
   routeGroup.clearLayers();
-  solution.vehicleList.forEach((vehicle) => {
+  solution.usedVehicleList.forEach((vehicle) => {
     L.polyline(vehicle.route, { color: colorByVehicle(vehicle) }).addTo(routeGroup);
   });
 

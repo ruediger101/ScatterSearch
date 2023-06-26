@@ -84,13 +84,13 @@ public class VehicleRoutingSolutionRepository {
     }
 
     public void add(VehicleRoutingSolution vehicleRoutingSolution) {
-        vehicleRoutingSolution.getVehicleList().sort((i, j) -> {
-            int result = Boolean.compare(i.getCustomerList().isEmpty(), j.getCustomerList().isEmpty());
-            if (result == 0) {
-                result = Long.compare(i.getId(), j.getId());
-            }
-            return result;
-        });
+        // vehicleRoutingSolution.getVehicleList().sort((i, j) -> {
+        //     int result = Boolean.compare(i.getCustomerList().isEmpty(), j.getCustomerList().isEmpty());
+        //     if (result == 0) {
+        //         result = Long.compare(i.getId(), j.getId());
+        //     }
+        //     return result;
+        // });
 
         this.vehicleRoutingSolutions.add(new Solution(vehicleRoutingSolution, time));
         if (currentSolution == null) {
