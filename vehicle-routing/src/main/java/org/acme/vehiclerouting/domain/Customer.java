@@ -27,22 +27,11 @@ public class Customer {
         }
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
+    public boolean isIdentical(Customer other) {
+        if (this == other)
             return true;
 
-        if (o instanceof Customer)
-            return id == ((Customer) o).getId();
-        else
-            return false;
-    }
-
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 31 * hash + (int) id;
-        return hash;
+        return id == other.getId();
     }
 
     public long getId() {

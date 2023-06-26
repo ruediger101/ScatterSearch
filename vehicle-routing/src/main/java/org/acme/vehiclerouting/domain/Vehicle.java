@@ -19,32 +19,14 @@ public class Vehicle {
     @PlanningListVariable
     private List<Customer> customerList;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
+    public boolean isIdentical(Vehicle other) {
+        if (this == other)
             return true;
-        }
 
-        if (!(o instanceof Vehicle)) {
-            return false;
-        }
-        Vehicle other = (Vehicle) o;
-
-        return (depot == null ? -1 : depot.getId()) == (other.getDepot() == null ? -1 : other.getDepot().getId())
+        return depot.getId() == other.getDepot().getId()
                 && capacity == other.getCapacity()
                 && fixCost == other.getFixCost()
-                && (this.getCustomerIds() == null ? Collections.emptyList() : this.getCustomerIds())
-                        .equals(other.getCustomerIds());
-    }
-
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 31 * hash + (depot == null ? 0 : depot.hashCode());
-        hash = 31 * hash + capacity;
-        hash = 31 * hash + (customerList == null ? 0 : customerList.hashCode());
-        hash = 31 * hash + fixCost;
-        return hash;
+                && this.getCustomerIds().equals(other.getCustomerIds());
     }
 
     public Vehicle() {

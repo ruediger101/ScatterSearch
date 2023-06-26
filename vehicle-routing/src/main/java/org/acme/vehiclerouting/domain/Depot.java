@@ -18,21 +18,11 @@ public class Depot {
         return location;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
+    public boolean isIdentical(Depot other) {
+        if (this == other)
             return true;
 
-        if (o instanceof Depot)
-            return id == ((Depot) o).getId();
-        else
-            return false;
-    }
+        return id == other.getId();
 
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 31 * hash + (int) id;
-        return hash;
     }
 }

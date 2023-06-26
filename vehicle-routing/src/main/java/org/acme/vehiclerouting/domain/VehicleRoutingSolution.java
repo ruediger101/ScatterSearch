@@ -37,15 +37,9 @@ public class VehicleRoutingSolution {
     private Location southWestCorner;
     private Location northEastCorner;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
+    public boolean isIdentical(VehicleRoutingSolution other) {
+        if (this == other)
             return true;
-
-        if (!(o instanceof VehicleRoutingSolution))
-            return false;
-
-        VehicleRoutingSolution other = ((VehicleRoutingSolution) o);
 
         List<Long> d1 = depotList == null ? Collections.emptyList()
                 : depotList.stream().map(Depot::getId).sorted().collect(Collectors.toList());
@@ -61,26 +55,21 @@ public class VehicleRoutingSolution {
                         .filter(v -> !v.getCustomerList().isEmpty())
                         .sorted((i, j) -> Long.compare(i.getCustomerIds().get(0), j.getCustomerIds().get(0)))
                         .collect(Collectors.toList());
-        List<Vehicle> v2 = other == null ? Collections.emptyList()
+        List<Vehicle> v2 = other.getVehicleList() == null ? Collections.emptyList()
                 : other.getVehicleList().stream()
                         .filter(v -> !v.getCustomerList().isEmpty())
                         .sorted((i, j) -> Long.compare(i.getCustomerIds().get(0), j.getCustomerIds().get(0)))
                         .collect(Collectors.toList());
 
-        return v1.equals(v2);
-    }
+        if (v1.size() != v2.size())
+            return false;
 
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 31 * hash + (depotList == null ? 0
-                : depotList.stream().map(Depot::getId).sorted().collect(Collectors.toList()).hashCode());
-        hash = 31 * hash + (vehicleList == null ? 0
-                : vehicleList.stream()
-                        .filter(v -> !v.getCustomerList().isEmpty())
-                        .sorted((i, j) -> Long.compare(i.getCustomerIds().get(0), j.getCustomerIds().get(0)))
-                        .collect(Collectors.toList()).hashCode());
-        return hash;
+        for (int i = 0; i < v1.size(); i++) {
+            if (!v1.get(i).isIdentical(v2.get(i)))
+                return false;
+        }
+
+        return true;
     }
 
     public VehicleRoutingSolution() {
