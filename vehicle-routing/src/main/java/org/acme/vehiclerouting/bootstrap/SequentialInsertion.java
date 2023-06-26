@@ -72,20 +72,26 @@ public class SequentialInsertion {
                 .filter(e -> !sortedTwc.contains(e.getKey())).sorted((i, j) -> Long.compare(i.getValue(), j.getValue()))
                 .map(Entry::getKey).collect(Collectors.toList());
 
-        // Start of new Solution
-        VehicleRoutingSolution newSolution = new VehicleRoutingSolution(solution.getName() + "_1", solution);
+        List<VehicleRoutingSolution> initalPopulation = new ArrayList<>();
 
-        // list sorted by TWC and compatibility criterion
-        List<Customer> unroutedCustomers = new ArrayList<>(sortedTwc);
-        unroutedCustomers.addAll(sortedCompatibility);
+        for (int i = 1; i <= numberSolutions; i++) {
+            // Start of new Solution
+            VehicleRoutingSolution newSolution = new VehicleRoutingSolution(solution.getName() + "_" + i, solution);
 
-        Iterator<Vehicle> it = newSolution.getVehicleList().iterator();
-        while (!unroutedCustomers.isEmpty() && it.hasNext()) {
-            Vehicle vehicle = it.next();
-            createNewRoute(unroutedCustomers, vehicle);
+            // list sorted by TWC and compatibility criterion
+            List<Customer> unroutedCustomers = new ArrayList<>(sortedTwc);
+            unroutedCustomers.addAll(sortedCompatibility);
+
+            Iterator<Vehicle> it = newSolution.getVehicleList().iterator();
+            while (!unroutedCustomers.isEmpty() && it.hasNext()) {
+                Vehicle vehicle = it.next();
+                createNewRoute(unroutedCustomers, vehicle);
+            }
+
+            initalPopulation.add(newSolution);
         }
 
-        return List.of(newSolution);
+        return initalPopulation;
     }
 
     private static long calcTwc(Customer c1, Customer c2) {
@@ -127,7 +133,8 @@ public class SequentialInsertion {
 
                 long deltaDistance = vehicle.getTotalDistanceMeters() - currentDistance;
 
-                if (!vehicle.isServiceTimeViolated() && deltaDistance < bestDeltaDistance && randInt.nextInt() > ACCEPTANCE_THRESHOLD) {
+                if (!vehicle.isServiceTimeViolated() && deltaDistance < bestDeltaDistance
+                        && randInt.nextInt() > ACCEPTANCE_THRESHOLD) {
                     bestDeltaDistance = deltaDistance;
                     bestCustomer = customer;
                     bestSequence = List.copyOf(vehicle.getCustomerList());
