@@ -2,7 +2,7 @@ package org.acme.vehiclerouting.bootstrap;
 
 import org.acme.vehiclerouting.domain.Location;
 import org.acme.vehiclerouting.domain.VehicleRoutingSolution;
-import org.acme.vehiclerouting.persistence.VehicleRoutingSolutionRepository;
+import org.acme.vehiclerouting.persistence.VehicleRoutingSolutionsRepository;
 
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -11,9 +11,9 @@ import jakarta.enterprise.event.Observes;
 @ApplicationScoped
 public class DemoDataGenerator {
 
-    private final VehicleRoutingSolutionRepository repository;
+    private final VehicleRoutingSolutionsRepository repository;
 
-    public DemoDataGenerator(VehicleRoutingSolutionRepository repository) {
+    public DemoDataGenerator(VehicleRoutingSolutionsRepository repository) {
         this.repository = repository;
     }
 
@@ -33,6 +33,6 @@ public class DemoDataGenerator {
                 .setSouthWestCorner(new Location(0L, 49.43069, 11.03332))
                 .setNorthEastCorner(new Location(0L, 49.49069, 11.13332))
                 .build();
-        repository.addAll(SequentialInsertion.solve(problem, 1));
+        repository.addAll(SequentialInsertion.solve(problem, 100));
     }
 }

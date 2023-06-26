@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.acme.vehiclerouting.domain.VehicleRoutingSolution;
 import org.acme.vehiclerouting.persistence.VehicleRoutingSolutionRepository;
+import org.acme.vehiclerouting.persistence.VehicleRoutingSolutionsRepository;
 import org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore;
 import org.optaplanner.core.api.solver.SolutionManager;
 import org.optaplanner.core.api.solver.SolverManager;
@@ -25,11 +26,11 @@ public class SolverResource {
 
     private final AtomicReference<Throwable> solverError = new AtomicReference<>();
 
-    private final VehicleRoutingSolutionRepository repository;
+    private final VehicleRoutingSolutionsRepository repository;
     private final SolverManager<VehicleRoutingSolution, Long> solverManager;
     private final SolutionManager<VehicleRoutingSolution, HardSoftLongScore> solutionManager;
 
-    public SolverResource(VehicleRoutingSolutionRepository repository,
+    public SolverResource(VehicleRoutingSolutionsRepository repository,
             SolverManager<VehicleRoutingSolution, Long> solverManager,
             SolutionManager<VehicleRoutingSolution, HardSoftLongScore> solutionManager) {
         this.repository = repository;
@@ -50,19 +51,21 @@ public class SolverResource {
             throw new RuntimeException("Solver failed", throwable);
         });
 
-        Optional<VehicleRoutingSolution> s1 = repository.getCurrentSolution();
-
-        VehicleRoutingSolution s = s1.orElse(VehicleRoutingSolution.empty());
+        VehicleRoutingSolution s = repository.getBestSolution().orElse(VehicleRoutingSolution.empty());
         return statusFromSolution(s);
     }
 
     @POST
     @Path("solve")
     public void solve() {
-        Optional<VehicleRoutingSolution> maybeSolution = repository.getCurrentSolution();
-            maybeSolution.ifPresent(
-                    vehicleRoutingSolution -> solverManager.solveAndListen(PROBLEM_ID, id -> vehicleRoutingSolution,
-                            repository::setCurrentSolution, (problemId, throwable) -> solverError.set(throwable)));
+        repository.getSolutions().forEach(s -> {
+            VehicleRoutingSolutionRepository vrsr = new VehicleRoutingSolutionRepository(s.getVehicleRoutingSolution());
+            solverManager.solveAndListen((long) s.hashCode(), problemId -> vrsr.solution(),
+                    s::updateSolution, (problemId, throwable) -> solverError.set(throwable));
+
+            // solverManager.getSolverStatus(null);
+            s.updateSolution(vrsr.solution());
+        });
     }
 
     @POST
