@@ -1,5 +1,6 @@
 package org.acme.vehiclerouting.rest;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -59,9 +60,22 @@ public class SolverResource {
     @POST
     @Path("solve")
     public void solve() {
-        repository.getSolutions()
-                .forEach(s -> solverManager.solveAndListen(s.getId(), problemId -> s.getVehicleRoutingSolution(),
-                        s::setVehicleRoutingSolution, (problemId, throwable) -> solverError.set(throwable)));
+        List<Solution> notOptimizedSolutions = repository.getNotOptimizedSolutions();
+        if (!notOptimizedSolutions.isEmpty())
+            notOptimizedSolutions
+                    .forEach(s -> solverManager.solveAndListen(s.getId(), problemId -> s.getVehicleRoutingSolution(),
+                            s::setVehicleRoutingSolution, (problemId, throwable) -> solverError.set(throwable)));
+        else {
+            // ensure refSet has proper content and size
+            if (repository.getTime() == 0)
+                repository.createRefSet();
+            else
+                repository.updateRefSet();
+
+            repository.generateNewSolutions();
+
+        }
+
     }
 
     @POST

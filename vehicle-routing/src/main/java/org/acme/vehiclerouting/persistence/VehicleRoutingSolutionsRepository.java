@@ -29,6 +29,14 @@ public class VehicleRoutingSolutionsRepository {
         vehicleRoutingSolutions.forEach(this::add);
     }
 
+    public void incrementTime() {
+        time++;
+    }
+
+    public int getTime() {
+        return time;
+    }
+
     public class DistanceSolutionTuple {
         private int distance = 0; // used to store distance to refset during selection
         private Solution solution;
@@ -43,7 +51,32 @@ public class VehicleRoutingSolutionsRepository {
         }
     }
 
+    public void createRefSet() {
+        sortVehicleRoutingSolutions();
+
+        List<Solution> refSet = vehicleRoutingSolutions.subList(0, refSetSize / 2);
+
+        List<DistanceSolutionTuple> diverseCandidates = vehicleRoutingSolutions
+                .subList(refSetSize / 2, vehicleRoutingSolutions.size()).stream()
+                .map(s -> new DistanceSolutionTuple(s, refSet))
+                .sorted((i, j) -> Integer.compare(j.distance, i.distance)).collect(Collectors.toList());
+
+        while (refSet.size() < refSetSize && !diverseCandidates.isEmpty()) {
+            DistanceSolutionTuple removed = diverseCandidates.remove(0);
+            refSet.add(removed.solution);
+            diverseCandidates.forEach(c -> c.updateDistance(removed.solution));
+        }
+
+        vehicleRoutingSolutions = refSet;
+    }
+
     public void updateRefSet() {
+        sortVehicleRoutingSolutions();
+
+        List<Solution> refSet = vehicleRoutingSolutions.subList(0, refSetSize);
+    }
+
+    private void sortVehicleRoutingSolutions() {
         vehicleRoutingSolutions.sort((i, j) -> {
             long s1 = i.getVehicleRoutingSolution().getScore() == null ? Long.MIN_VALUE
                     : i.getVehicleRoutingSolution().getScore().hardScore();
@@ -62,28 +95,11 @@ public class VehicleRoutingSolutionsRepository {
             }
             return result;
         });
-
-        List<Solution> refSet = vehicleRoutingSolutions.subList(0, refSetSize / 2);
-
-        List<DistanceSolutionTuple> diverseCandidates = vehicleRoutingSolutions
-                .subList(refSetSize / 2, vehicleRoutingSolutions.size()).stream()
-                .map(s -> new DistanceSolutionTuple(s, refSet))
-                .sorted((i, j) -> Integer.compare(j.distance, i.distance)).collect(Collectors.toList());
-
-        while (refSet.size() < refSetSize && !diverseCandidates.isEmpty()) {
-            DistanceSolutionTuple removed = diverseCandidates.remove(0);
-            refSet.add(removed.solution);
-            diverseCandidates.forEach(c -> c.updateDistance(removed.solution));
-        }
-
-        vehicleRoutingSolutions = refSet;
     }
 
-    public Set<Set<VehicleRoutingSolution>> getSubSets() {
-        // increase time to identify all entries changed from now
-        time++;
-
-        Set<Set<VehicleRoutingSolution>> setOfSets = new HashSet<>();
+    private Set<Set<VehicleRoutingSolution>> getSubSets() {
+        sortVehicleRoutingSolutions();
+        Set<Set<VehicleRoutingSolution>> twoSolutionSets = new HashSet<>();
         Set<Solution> solutionSet = new HashSet<>(vehicleRoutingSolutions);
 
         for (Iterator<Solution> it1 = solutionSet.iterator(); it1.hasNext(); it1 = solutionSet.iterator()) {
@@ -96,13 +112,47 @@ public class VehicleRoutingSolutionsRepository {
                     Set<VehicleRoutingSolution> subSet = new HashSet<>();
                     subSet.add(s1.getVehicleRoutingSolution());
                     subSet.add(s2.getVehicleRoutingSolution());
-                    setOfSets.add(subSet);
+                    twoSolutionSets.add(subSet);
                 }
             }
         }
 
-        return setOfSets;
+        Set<Set<VehicleRoutingSolution>> threeSolutionSets = new HashSet<>();
+        twoSolutionSets.forEach(set -> {
+            Set<VehicleRoutingSolution> tempSet = new HashSet<>(set);
+            tempSet.add(vehicleRoutingSolutions.stream().map(Solution::getVehicleRoutingSolution)
+                    .filter(solution -> !set.contains(solution)).findFirst().orElse(null));
+            threeSolutionSets.add(tempSet);
+        });
+
+        Set<Set<VehicleRoutingSolution>> fourSolutionSets = new HashSet<>();
+        threeSolutionSets.forEach(set -> {
+            Set<VehicleRoutingSolution> tempSet = new HashSet<>(set);
+            tempSet.add(vehicleRoutingSolutions.stream().map(Solution::getVehicleRoutingSolution)
+                    .filter(solution -> !set.contains(solution)).findFirst().orElse(null));
+            fourSolutionSets.add(tempSet);
+        });
+
+        Set<Set<VehicleRoutingSolution>> bestIsolutions = new HashSet<>();
+        for (int i = 5; i <= vehicleRoutingSolutions.size(); i++) {
+            bestIsolutions.add(vehicleRoutingSolutions.subList(0, i).stream().map(Solution::getVehicleRoutingSolution)
+                    .collect(Collectors.toSet()));
+        }
+
+        Set<Set<VehicleRoutingSolution>> finalSet = new HashSet<>(twoSolutionSets);
+        finalSet.addAll(threeSolutionSets);
+        finalSet.addAll(fourSolutionSets);
+
+        return finalSet;
     }
+
+
+    public void generateNewSolutions(){
+        time++;
+        Set<Set<VehicleRoutingSolution>> subSets = getSubSets();
+        //TODO combine solutions
+    }
+
 
     public List<Solution> getSolutions() {
         return vehicleRoutingSolutions;
@@ -127,5 +177,10 @@ public class VehicleRoutingSolutionsRepository {
             }
             return result;
         }).findFirst();
+    }
+
+    public List<Solution> getNotOptimizedSolutions() {
+        return vehicleRoutingSolutions.stream().filter(s -> s.getLastUpdate() == this.time)
+                .collect(Collectors.toList());
     }
 }
