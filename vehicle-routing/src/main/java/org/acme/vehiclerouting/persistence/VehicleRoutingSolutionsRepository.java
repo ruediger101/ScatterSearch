@@ -2,85 +2,19 @@ package org.acme.vehiclerouting.persistence;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.acme.vehiclerouting.domain.Customer;
-import org.acme.vehiclerouting.domain.Vehicle;
 import org.acme.vehiclerouting.domain.VehicleRoutingSolution;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class VehicleRoutingSolutionsRepository {
-    public class Solution {
-        private long id;
-        private int lastUpdate;
-        private VehicleRoutingSolution vrs;
-        private Map<Customer, Customer> arcs = new HashMap<>();
-        private Set<Customer> routeStart = new HashSet<>();
-        private Set<Customer> routeEnd = new HashSet<>();
-
-        Solution(VehicleRoutingSolution s, int time) {
-            this.lastUpdate = time;
-            this.updateSolution(s);
-
-        }
-
-        public void updateSolution(VehicleRoutingSolution s) {
-            this.vrs = s;
-            s.getVehicleList().stream().map(Vehicle::getCustomerList).filter(l -> !l.isEmpty()).forEach(l -> {
-                routeStart.add(l.get(0));
-                routeEnd.add(l.get(l.size() - 1));
-                for (int i = 0; i < l.size() - 1; i++) {
-                    arcs.put(l.get(i), l.get(i + 1));
-                }
-            });
-        }
-
-        public VehicleRoutingSolution getVehicleRoutingSolution() {
-            return vrs;
-        }
-
-        public int noCommonArcs(Solution b) {
-            Set<Customer> start = new HashSet<>(routeStart);
-            start.retainAll(b.routeStart);
-            Set<Customer> end = new HashSet<>(routeEnd);
-            end.retainAll(b.routeEnd);
-
-            int noArcs = start.size() + end.size();
-
-            for (Iterator<Entry<Customer, Customer>> it = arcs.entrySet().iterator(); it.hasNext();) {
-                Entry<Customer, Customer> next = it.next();
-                if (Objects.equals(next.getValue(), b.arcs.get(next.getKey())))
-                    noArcs++;
-            }
-
-            return noArcs;
-        }
-    }
-
-    private class SolutionDistance {
-        private int distance = 0; // used to store distance to refset during selection
-        private Solution solution;
-
-        SolutionDistance(Solution solution, Collection<Solution> refSet) {
-            this.solution = solution;
-            this.distance = refSet.stream().mapToInt(this.solution::noCommonArcs).min().orElse(Integer.MAX_VALUE);
-        }
-
-        private void updateDistance(Solution otherSolution) {
-            distance = Math.min(distance, solution.noCommonArcs(otherSolution));
-        }
-    }
 
     private int time = 0;
 
@@ -95,17 +29,35 @@ public class VehicleRoutingSolutionsRepository {
         vehicleRoutingSolutions.forEach(this::add);
     }
 
+    public class DistanceSolutionTuple {
+        private int distance = 0; // used to store distance to refset during selection
+        private Solution solution;
+
+        DistanceSolutionTuple(Solution solution, Collection<Solution> refSet) {
+            this.solution = solution;
+            this.distance = refSet.stream().mapToInt(this.solution::noCommonArcs).min().orElse(0);
+        }
+
+        public void updateDistance(Solution otherSolution) {
+            distance = Math.min(distance, solution.noCommonArcs(otherSolution));
+        }
+    }
+
     public void updateRefSet() {
         vehicleRoutingSolutions.sort((i, j) -> {
-            long s1 = i.vrs.getScore() == null ? Long.MIN_VALUE : i.vrs.getScore().hardScore();
-            long s2 = j.vrs.getScore() == null ? Long.MIN_VALUE : j.vrs.getScore().hardScore();
+            long s1 = i.getVehicleRoutingSolution().getScore() == null ? Long.MIN_VALUE
+                    : i.getVehicleRoutingSolution().getScore().hardScore();
+            long s2 = j.getVehicleRoutingSolution().getScore() == null ? Long.MIN_VALUE
+                    : j.getVehicleRoutingSolution().getScore().hardScore();
             int result = Long.compare(s2, s1);
             if (result == 0) {
-                s1 = i.vrs.getScore() == null ? Long.MIN_VALUE : i.vrs.getScore().softScore();
-                s2 = j.vrs.getScore() == null ? Long.MIN_VALUE : j.vrs.getScore().softScore();
+                s1 = i.getVehicleRoutingSolution().getScore() == null ? Long.MIN_VALUE
+                        : i.getVehicleRoutingSolution().getScore().softScore();
+                s2 = j.getVehicleRoutingSolution().getScore() == null ? Long.MIN_VALUE
+                        : j.getVehicleRoutingSolution().getScore().softScore();
                 result = Long.compare(s2, s1);
                 if (result == 0) {
-                    result = Integer.compare(i.lastUpdate, j.lastUpdate);
+                    result = Integer.compare(i.getLastUpdate(), j.getLastUpdate());
                 }
             }
             return result;
@@ -113,13 +65,13 @@ public class VehicleRoutingSolutionsRepository {
 
         List<Solution> refSet = vehicleRoutingSolutions.subList(0, refSetSize / 2);
 
-        List<SolutionDistance> diverseCandidates = vehicleRoutingSolutions.subList(refSetSize / 2,
-                vehicleRoutingSolutions.size()).stream().map(l -> new SolutionDistance(l, refSet))
-                .sorted((i, j) -> Integer.compare(j.distance, i.distance))
-                .collect(Collectors.toList());
+        List<DistanceSolutionTuple> diverseCandidates = vehicleRoutingSolutions
+                .subList(refSetSize / 2, vehicleRoutingSolutions.size()).stream()
+                .map(s -> new DistanceSolutionTuple(s, refSet))
+                .sorted((i, j) -> Integer.compare(j.distance, i.distance)).collect(Collectors.toList());
 
         while (refSet.size() < refSetSize && !diverseCandidates.isEmpty()) {
-            SolutionDistance removed = diverseCandidates.remove(0);
+            DistanceSolutionTuple removed = diverseCandidates.remove(0);
             refSet.add(removed.solution);
             diverseCandidates.forEach(c -> c.updateDistance(removed.solution));
         }
@@ -140,10 +92,10 @@ public class VehicleRoutingSolutionsRepository {
 
             for (Iterator<Solution> it2 = solutionSet.iterator(); it2.hasNext();) {
                 Solution s2 = it2.next();
-                if (s1.lastUpdate < time || s2.lastUpdate < time) {
+                if (s1.getLastUpdate() < time || s2.getLastUpdate() < time) {
                     Set<VehicleRoutingSolution> subSet = new HashSet<>();
-                    subSet.add(s1.vrs);
-                    subSet.add(s2.vrs);
+                    subSet.add(s1.getVehicleRoutingSolution());
+                    subSet.add(s2.getVehicleRoutingSolution());
                     setOfSets.add(subSet);
                 }
             }
@@ -156,20 +108,24 @@ public class VehicleRoutingSolutionsRepository {
         return vehicleRoutingSolutions;
     }
 
-    public Optional<VehicleRoutingSolution> getBestSolution() {
+    public Optional<Solution> getBestSolution() {
         return vehicleRoutingSolutions.stream().sorted((i, j) -> {
-            long s1 = i.vrs.getScore() == null ? Long.MIN_VALUE : i.vrs.getScore().hardScore();
-            long s2 = j.vrs.getScore() == null ? Long.MIN_VALUE : j.vrs.getScore().hardScore();
+            long s1 = i.getVehicleRoutingSolution().getScore() == null ? Long.MIN_VALUE
+                    : i.getVehicleRoutingSolution().getScore().hardScore();
+            long s2 = j.getVehicleRoutingSolution().getScore() == null ? Long.MIN_VALUE
+                    : j.getVehicleRoutingSolution().getScore().hardScore();
             int result = Long.compare(s2, s1);
             if (result == 0) {
-                s1 = i.vrs.getScore() == null ? Long.MIN_VALUE : i.vrs.getScore().softScore();
-                s2 = j.vrs.getScore() == null ? Long.MIN_VALUE : j.vrs.getScore().softScore();
+                s1 = i.getVehicleRoutingSolution().getScore() == null ? Long.MIN_VALUE
+                        : i.getVehicleRoutingSolution().getScore().softScore();
+                s2 = j.getVehicleRoutingSolution().getScore() == null ? Long.MIN_VALUE
+                        : j.getVehicleRoutingSolution().getScore().softScore();
                 result = Long.compare(s2, s1);
                 if (result == 0) {
-                    result = Integer.compare(i.lastUpdate, j.lastUpdate);
+                    result = Integer.compare(i.getLastUpdate(), j.getLastUpdate());
                 }
             }
             return result;
-        }).findFirst().map(s -> s.vrs);
+        }).findFirst();
     }
 }

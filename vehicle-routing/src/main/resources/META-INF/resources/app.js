@@ -189,7 +189,7 @@ const getCustomerMarker = ({ id, location }) => {
   return marker;
 };
 
-const showProblem = ({ solution, scoreExplanation, isSolving }) => {
+const showProblem = ({ solution, scoreExplanation, isSolving , idBestSolution}) => {
   if (!initialized) {
     initialized = true;
     map.fitBounds(solution.bounds);
@@ -261,6 +261,7 @@ const showProblem = ({ solution, scoreExplanation, isSolving }) => {
   });
 
   // Summary
+  $('#solutionId').text(idBestSolution);
   $('#score').text(solution.score);
   $('#scoreInfo').text(scoreExplanation);
   $('#distance').text(formatDistance(solution.distanceMeters));
