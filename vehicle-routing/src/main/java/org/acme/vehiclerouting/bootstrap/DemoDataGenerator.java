@@ -33,6 +33,6 @@ public class DemoDataGenerator {
                 .setSouthWestCorner(new Location(0L, 49.43069, 11.03332))
                 .setNorthEastCorner(new Location(0L, 49.49069, 11.13332))
                 .build();
-        repository.addAll(SequentialInsertion.solve(problem, 100));
+        repository.addAll(SequentialInsertion.solve(problem, 100, true));
     }
 }

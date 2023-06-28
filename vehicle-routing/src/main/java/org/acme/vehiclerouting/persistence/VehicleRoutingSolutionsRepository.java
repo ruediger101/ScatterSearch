@@ -5,8 +5,11 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.acme.vehiclerouting.domain.VehicleRoutingSolution;
@@ -97,9 +100,9 @@ public class VehicleRoutingSolutionsRepository {
         });
     }
 
-    private Set<Set<VehicleRoutingSolution>> getSubSets() {
+    private Set<Set<Solution>> getSubSets() {
         sortVehicleRoutingSolutions();
-        Set<Set<VehicleRoutingSolution>> twoSolutionSets = new HashSet<>();
+        Set<Set<Solution>> twoSolutionSets = new HashSet<>();
         Set<Solution> solutionSet = new HashSet<>(vehicleRoutingSolutions);
 
         for (Iterator<Solution> it1 = solutionSet.iterator(); it1.hasNext(); it1 = solutionSet.iterator()) {
@@ -109,50 +112,74 @@ public class VehicleRoutingSolutionsRepository {
             for (Iterator<Solution> it2 = solutionSet.iterator(); it2.hasNext();) {
                 Solution s2 = it2.next();
                 if (s1.getLastUpdate() < time || s2.getLastUpdate() < time) {
-                    Set<VehicleRoutingSolution> subSet = new HashSet<>();
-                    subSet.add(s1.getVehicleRoutingSolution());
-                    subSet.add(s2.getVehicleRoutingSolution());
+                    Set<Solution> subSet = new HashSet<>();
+                    subSet.add(s1);
+                    subSet.add(s2);
                     twoSolutionSets.add(subSet);
                 }
             }
         }
 
-        Set<Set<VehicleRoutingSolution>> threeSolutionSets = new HashSet<>();
+        Set<Set<Solution>> threeSolutionSets = new HashSet<>();
         twoSolutionSets.forEach(set -> {
-            Set<VehicleRoutingSolution> tempSet = new HashSet<>(set);
-            tempSet.add(vehicleRoutingSolutions.stream().map(Solution::getVehicleRoutingSolution)
-                    .filter(solution -> !set.contains(solution)).findFirst().orElse(null));
+            Set<Solution> tempSet = new HashSet<>(set);
+            tempSet.add(vehicleRoutingSolutions.stream().filter(solution -> !set.contains(solution)).findFirst()
+                    .orElse(null));
             threeSolutionSets.add(tempSet);
         });
 
-        Set<Set<VehicleRoutingSolution>> fourSolutionSets = new HashSet<>();
+        Set<Set<Solution>> fourSolutionSets = new HashSet<>();
         threeSolutionSets.forEach(set -> {
-            Set<VehicleRoutingSolution> tempSet = new HashSet<>(set);
-            tempSet.add(vehicleRoutingSolutions.stream().map(Solution::getVehicleRoutingSolution)
+            Set<Solution> tempSet = new HashSet<>(set);
+            tempSet.add(vehicleRoutingSolutions.stream()
                     .filter(solution -> !set.contains(solution)).findFirst().orElse(null));
             fourSolutionSets.add(tempSet);
         });
 
-        Set<Set<VehicleRoutingSolution>> bestIsolutions = new HashSet<>();
+        Set<Set<Solution>> bestIsolutions = new HashSet<>();
         for (int i = 5; i <= vehicleRoutingSolutions.size(); i++) {
-            bestIsolutions.add(vehicleRoutingSolutions.subList(0, i).stream().map(Solution::getVehicleRoutingSolution)
+            bestIsolutions.add(vehicleRoutingSolutions.subList(0, i).stream()
                     .collect(Collectors.toSet()));
         }
 
-        Set<Set<VehicleRoutingSolution>> finalSet = new HashSet<>(twoSolutionSets);
+        Set<Set<Solution>> finalSet = new HashSet<>(twoSolutionSets);
         finalSet.addAll(threeSolutionSets);
         finalSet.addAll(fourSolutionSets);
 
         return finalSet;
     }
 
+    public Set<Solution> combineSolutions(Set<Set<Solution>> subSets) {
+        Set<Solution> combiniedSolutions = new HashSet<>();
 
-    public void generateNewSolutions(){
-        time++;
-        Set<Set<VehicleRoutingSolution>> subSets = getSubSets();
-        //TODO combine solutions
+        subSets.stream().forEach(set -> {
+            Map<Solution, Long> solutionDistanceMap = set.stream()
+                    .collect(Collectors.toMap(Function.identity(),
+                            solution -> solution.getVehicleRoutingSolution().getDistanceMeters()));
+            double summedDistance = solutionDistanceMap.values().stream().mapToLong(Long::longValue).sum();
+
+            Map<Solution, Double> intermediateSolutionValues = solutionDistanceMap.entrySet().stream()
+                    .collect(Collectors.toMap(Entry::getKey, entry -> summedDistance / entry.getValue()));
+            double summedIntermediateSolutionValues = intermediateSolutionValues.values().stream()
+                    .mapToDouble(Double::doubleValue)
+                    .sum();
+
+            Map<Solution, Double> solutionValues = intermediateSolutionValues.entrySet().stream()
+                    .collect(Collectors.toMap(Entry::getKey,
+                            entry -> entry.getValue() / summedIntermediateSolutionValues));
+
+            //TODO calculate ARC weight
+
+        });
+
+        return combiniedSolutions;
     }
 
+    public void generateNewSolutions() {
+        time++;
+        Set<Set<Solution>> subSets = getSubSets();
+        // TODO combine solutions
+    }
 
     public List<Solution> getSolutions() {
         return vehicleRoutingSolutions;

@@ -23,7 +23,17 @@ public class SequentialInsertion {
     private static OfInt randInt = rand.ints(99, 100).iterator();
     private static final int ACCEPTANCE_THRESHOLD = 95;
 
+    public static VehicleRoutingSolution solve(VehicleRoutingSolution solution) {
+        List<VehicleRoutingSolution> solutions = solve(solution, 1);
+        return solutions.isEmpty() ? null : solutions.get(0);
+    }
+
     public static List<VehicleRoutingSolution> solve(VehicleRoutingSolution solution, int numberSolutions) {
+        return solve(solution, numberSolutions, false);
+    }
+
+    public static List<VehicleRoutingSolution> solve(VehicleRoutingSolution solution, int numberSolutions,
+            boolean randomize) {
         if (solution == null)
             return Collections.emptyList();
 
@@ -85,7 +95,10 @@ public class SequentialInsertion {
             Iterator<Vehicle> it = newSolution.getVehicleList().iterator();
             while (!unroutedCustomers.isEmpty() && it.hasNext()) {
                 Vehicle vehicle = it.next();
-                createNewRoute(unroutedCustomers, vehicle);
+                int index = randomize ? (int) (Math.exp(rand.nextDouble() * Math.log(unroutedCustomers.size())) - 1.0)
+                        : 0;
+                vehicle.getCustomerList().add(unroutedCustomers.remove(index));
+                populateRoute(unroutedCustomers, vehicle, randomize);
             }
 
             initalPopulation.add(newSolution);
@@ -107,11 +120,7 @@ public class SequentialInsertion {
         }
     }
 
-    private static void createNewRoute(List<Customer> unroutedCustomers, Vehicle vehicle) {
-        int index = (int) (Math.exp(rand.nextDouble() * Math.log(unroutedCustomers.size())) - 1.0);
-
-        vehicle.getCustomerList().add(unroutedCustomers.remove(index));
-
+    public static void populateRoute(List<Customer> unroutedCustomers, Vehicle vehicle, boolean randomize) {
         List<Customer> feasibleCustomers = unroutedCustomers.stream()
                 .filter(c -> c.getDemand() <= (vehicle.getCapacity() - vehicle.getTotalDemand()))
                 .collect(Collectors.toList());
@@ -134,7 +143,7 @@ public class SequentialInsertion {
                 long deltaDistance = vehicle.getTotalDistanceMeters() - currentDistance;
 
                 if (!vehicle.isServiceTimeViolated() && deltaDistance < bestDeltaDistance
-                        && randInt.nextInt() > ACCEPTANCE_THRESHOLD) {
+                        && (!randomize || randInt.nextInt() > ACCEPTANCE_THRESHOLD)) {
                     bestDeltaDistance = deltaDistance;
                     bestCustomer = customer;
                     bestSequence = List.copyOf(vehicle.getCustomerList());
@@ -144,7 +153,7 @@ public class SequentialInsertion {
                     Collections.swap(vehicle.getCustomerList(), i, i + 1);
                     deltaDistance = vehicle.getTotalDistanceMeters() - currentDistance;
                     if (!vehicle.isServiceTimeViolated() && deltaDistance < bestDeltaDistance
-                            && randInt.nextInt() > ACCEPTANCE_THRESHOLD) {
+                            && (!randomize || randInt.nextInt() > ACCEPTANCE_THRESHOLD)) {
                         bestDeltaDistance = vehicle.getTotalDistanceMeters() - currentDistance;
                         bestCustomer = customer;
                         bestSequence = List.copyOf(vehicle.getCustomerList());
