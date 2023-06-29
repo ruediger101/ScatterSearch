@@ -39,8 +39,7 @@ public class SolverResource {
     }
 
     private Status statusFromSolution(VehicleRoutingSolution solution) {
-        return new Status(solution,
-                solutionManager.explain(solution).getSummary(),
+        return new Status(solution, solutionManager.explain(solution).getSummary(),
                 this.repository.getSolutions().stream().map(Solution::getId).map(solverManager::getSolverStatus)
                         .distinct().collect(Collectors.toSet()),
                 this.repository.getBestSolution().map(s -> s.getId()).orElse(0L));

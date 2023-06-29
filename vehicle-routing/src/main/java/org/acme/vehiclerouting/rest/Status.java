@@ -1,6 +1,5 @@
 package org.acme.vehiclerouting.rest;
 
-import java.util.Collection;
 import java.util.Set;
 
 import org.acme.vehiclerouting.domain.VehicleRoutingSolution;

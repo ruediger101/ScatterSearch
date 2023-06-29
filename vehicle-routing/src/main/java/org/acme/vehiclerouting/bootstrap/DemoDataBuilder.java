@@ -116,8 +116,8 @@ public class DemoDataBuilder {
             throw new IllegalStateException("maxDemand (" + maxDemand + ") must be greater than zero.");
         }
         if (minDemand > maxDemand) {
-            throw new IllegalStateException("maxDemand (" + maxDemand + ") must be greater than minDemand ("
-                    + minDemand + ").");
+            throw new IllegalStateException(
+                    "maxDemand (" + maxDemand + ") must be greater than minDemand (" + minDemand + ").");
         }
         if (vehicleCapacity < 1) {
             throw new IllegalStateException(
@@ -128,12 +128,10 @@ public class DemoDataBuilder {
                     "Number of customerCount (" + customerCount + ") must be greater than zero.");
         }
         if (vehicleCount < 1) {
-            throw new IllegalStateException(
-                    "Number of vehicleCount (" + vehicleCount + ") must be greater than zero.");
+            throw new IllegalStateException("Number of vehicleCount (" + vehicleCount + ") must be greater than zero.");
         }
         if (depotCount < 1) {
-            throw new IllegalStateException(
-                    "Number of depotCount (" + depotCount + ") must be greater than zero.");
+            throw new IllegalStateException("Number of depotCount (" + depotCount + ") must be greater than zero.");
         }
 
         if (northEastCorner.getLatitude() <= southWestCorner.getLatitude()) {
@@ -147,8 +145,7 @@ public class DemoDataBuilder {
         }
 
         if (vehicleFixCost < 0) {
-            throw new IllegalStateException(
-                    "vehicleFixCost (" + vehicleFixCost + ") must not be negative.");
+            throw new IllegalStateException("vehicleFixCost (" + vehicleFixCost + ") must not be negative.");
         }
 
         if (minServiceTime < 1) {
@@ -159,8 +156,7 @@ public class DemoDataBuilder {
         }
         if (minServiceTime > maxServiceTime) {
             throw new IllegalStateException(
-                    "maxServiceTime (" + maxServiceTime + ") must be greater than minServiceTime ("
-                            + minDemand + ").");
+                    "maxServiceTime (" + maxServiceTime + ") must be greater than minServiceTime (" + minDemand + ").");
         }
 
         if (minServiceWindow < 1) {
@@ -170,9 +166,8 @@ public class DemoDataBuilder {
             throw new IllegalStateException("maxServiceWindow (" + maxServiceWindow + ") must be greater than zero.");
         }
         if (minServiceWindow >= maxServiceWindow) {
-            throw new IllegalStateException(
-                    "maxServiceWindow (" + maxServiceWindow + ") must be greater than minServiceWindow ("
-                            + minDemand + ").");
+            throw new IllegalStateException("maxServiceWindow (" + maxServiceWindow
+                    + ") must be greater than minServiceWindow (" + minDemand + ").");
         }
 
         String name = "demo";
@@ -191,41 +186,30 @@ public class DemoDataBuilder {
 
         PrimitiveIterator.OfInt depotRandom = random.ints(0, depotCount).iterator();
 
-        Supplier<Depot> depotSupplier = () -> new Depot(
-                sequence.incrementAndGet(),
+        Supplier<Depot> depotSupplier = () -> new Depot(sequence.incrementAndGet(),
                 new Location(sequence.incrementAndGet(), 49.46069, 11.08332));
 
-        List<Depot> depotList = Stream.generate(depotSupplier)
-                .limit(depotCount)
-                .collect(Collectors.toList());
+        List<Depot> depotList = Stream.generate(depotSupplier).limit(depotCount).collect(Collectors.toList());
 
-        Supplier<Vehicle> vehicleSupplier = () -> new Vehicle(
-                sequence.incrementAndGet(),
-                vehicleCapacity,
-                depotList.get(depotRandom.nextInt()),
-                vehicleFixCost);
+        Supplier<Vehicle> vehicleSupplier = () -> new Vehicle(sequence.incrementAndGet(), vehicleCapacity,
+                depotList.get(depotRandom.nextInt()), vehicleFixCost);
 
-        List<Vehicle> vehicleList = Stream.generate(vehicleSupplier)
-                .limit(vehicleCount)
-                .collect(Collectors.toList());
+        List<Vehicle> vehicleList = Stream.generate(vehicleSupplier).limit(vehicleCount).collect(Collectors.toList());
 
-        Supplier<Customer> customerSupplier = () -> new Customer(
-                sequence.incrementAndGet(),
+        Supplier<Customer> customerSupplier = () -> new Customer(sequence.incrementAndGet(),
                 new Location(sequence.incrementAndGet(), latitudes.nextDouble(), longitudes.nextDouble()),
                 demand.nextInt(), serviceTime.nextInt(), serviceWindow.nextInt(), serviceWindow.nextInt());
 
-        List<Customer> customerList = Stream.generate(customerSupplier)
-                .limit(customerCount)
+        List<Customer> customerList = Stream.generate(customerSupplier).limit(customerCount)
                 .collect(Collectors.toList());
 
-        List<Location> locationList = Stream.concat(
-                customerList.stream().map(Customer::getLocation),
-                depotList.stream().map(Depot::getLocation))
+        List<Location> locationList = Stream
+                .concat(customerList.stream().map(Customer::getLocation), depotList.stream().map(Depot::getLocation))
                 .collect(Collectors.toList());
 
         distanceCalculator.initDistanceMaps(locationList);
 
-        return new VehicleRoutingSolution(name, locationList,
-                depotList, vehicleList, customerList, southWestCorner, northEastCorner);
+        return new VehicleRoutingSolution(name, locationList, depotList, vehicleList, customerList, southWestCorner,
+                northEastCorner);
     }
 }
