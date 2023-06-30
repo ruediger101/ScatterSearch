@@ -43,12 +43,12 @@ public class VehicleRoutingSolutionsRepository {
     }
 
     public class DistanceSolutionTuple {
-        private int distance = 0; // used to store distance to refset during selection
+        private int distance = 0; // used to store distance to referenceSet during selection
         private Solution solution;
 
-        DistanceSolutionTuple(Solution solution, Collection<Solution> refSet) {
+        DistanceSolutionTuple(Solution solution, Collection<Solution> referenceSet) {
             this.solution = solution;
-            this.distance = refSet.stream().mapToInt(this.solution::noCommonArcs).min().orElse(0);
+            this.distance = referenceSet.stream().mapToInt(this.solution::noCommonArcs).min().orElse(0);
         }
 
         public void updateDistance(Solution otherSolution) {
@@ -76,7 +76,7 @@ public class VehicleRoutingSolutionsRepository {
     public void updateRefSet() {
         sortVehicleRoutingSolutions();
 
-        List<Solution> refSet = vehicleRoutingSolutions.subList(0, refSetSize);
+        vehicleRoutingSolutions = vehicleRoutingSolutions.subList(0, refSetSize);
     }
 
     private void sortVehicleRoutingSolutions() {
@@ -130,9 +130,9 @@ public class VehicleRoutingSolutionsRepository {
             fourSolutionSets.add(tempSet);
         });
 
-        Set<Set<Solution>> bestIsolutions = new HashSet<>();
+        Set<Set<Solution>> bestSolutions = new HashSet<>();
         for (int i = 5; i <= vehicleRoutingSolutions.size(); i++) {
-            bestIsolutions.add(vehicleRoutingSolutions.subList(0, i).stream().collect(Collectors.toSet()));
+            bestSolutions.add(vehicleRoutingSolutions.subList(0, i).stream().collect(Collectors.toSet()));
         }
 
         Set<Set<Solution>> finalSet = new HashSet<>(twoSolutionSets);
@@ -143,7 +143,7 @@ public class VehicleRoutingSolutionsRepository {
     }
 
     public Set<Solution> combineSolutions(Set<Set<Solution>> subSets) {
-        Set<Solution> combiniedSolutions = new HashSet<>();
+        Set<Solution> combinedSolutions = new HashSet<>();
 
         subSets.stream().forEach(set -> {
             Map<Solution, Long> solutionDistanceMap = set.stream()
@@ -227,7 +227,7 @@ public class VehicleRoutingSolutionsRepository {
 
         });
 
-        return combiniedSolutions;
+        return combinedSolutions;
     }
 
     public Set<Solution> generateNewSolutions() {
