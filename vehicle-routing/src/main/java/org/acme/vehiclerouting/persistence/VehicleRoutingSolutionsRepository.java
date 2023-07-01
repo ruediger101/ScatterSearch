@@ -360,8 +360,18 @@ public class VehicleRoutingSolutionsRepository {
     }
 
     public Optional<Solution> getBestSolution() {
-        return vehicleRoutingSolutions.stream().sorted((i, j) -> j.getVehicleRoutingSolution().getScore().compareTo(i.getVehicleRoutingSolution().getScore()))
-                .findFirst();
+        boolean useScore = vehicleRoutingSolutions.stream().allMatch(s -> s.getVehicleRoutingSolution().getScore() != null);
+        return vehicleRoutingSolutions.stream().sorted((i, j) -> {
+            if (useScore)
+                return j.getVehicleRoutingSolution().getScore().compareTo(i.getVehicleRoutingSolution().getScore());
+            else {
+                return Long.compare(
+                        i.getVehicleRoutingSolution().getDistanceMeters()
+                                + i.getVehicleRoutingSolution().getUsedVehicleList().stream().mapToInt(Vehicle::getFixCost).sum(),
+                        j.getVehicleRoutingSolution().getDistanceMeters()
+                                + j.getVehicleRoutingSolution().getUsedVehicleList().stream().mapToInt(Vehicle::getFixCost).sum());
+            }
+        }).findFirst();
     }
 
     public List<Solution> getNotOptimizedSolutions() {
