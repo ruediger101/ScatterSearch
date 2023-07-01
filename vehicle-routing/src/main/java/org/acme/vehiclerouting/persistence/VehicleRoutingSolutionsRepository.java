@@ -2,6 +2,7 @@ package org.acme.vehiclerouting.persistence;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.acme.vehiclerouting.domain.Customer;
+import org.acme.vehiclerouting.domain.Vehicle;
 import org.acme.vehiclerouting.domain.VehicleRoutingSolution;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -146,6 +148,11 @@ public class VehicleRoutingSolutionsRepository {
         Set<Solution> combinedSolutions = new HashSet<>();
 
         subSets.stream().forEach(set -> {
+            String name = set.stream().map(s -> s.getVehicleRoutingSolution().getName()).collect(Collectors.joining(")+(", "(", ")"));
+            Solution newSolution = new Solution(new VehicleRoutingSolution(name, set.iterator().next().getVehicleRoutingSolution()), time);
+            newSolution.getVehicleRoutingSolution().getVehicleList().forEach(v -> v.getCustomerList().clear());
+            combinedSolutions.add(newSolution);
+
             Map<Solution, Long> solutionDistanceMap = set.stream()
                     .collect(Collectors.toMap(Function.identity(), solution -> solution.getVehicleRoutingSolution().getDistanceMeters()));
             double summedDistance = solutionDistanceMap.values().stream().mapToLong(Long::longValue).sum();
@@ -218,11 +225,88 @@ public class VehicleRoutingSolutionsRepository {
                         break;
                     }
                 }
+                // remove route from and to depot if added.
                 newRoute.removeAll(null);
-
-                // TODO check route feasibility
-
                 newRoutes.add(newRoute);
+            }
+
+            // check and restore route feasibility
+            Iterator<Vehicle> unusedVehicles = new ArrayList<>(newSolution.getVehicleRoutingSolution().getVehicleList()).iterator();
+            List<Vehicle> usedVehicles = new ArrayList<>();
+            List<Customer> unroutedCustomers = new ArrayList<>(newSolution.getVehicleRoutingSolution().getCustomerList());
+            for (Iterator<List<Customer>> it = newRoutes.iterator(); it.hasNext(); it = newRoutes.iterator()) {
+                Vehicle vehicle = unusedVehicles.next();
+                unusedVehicles.remove();
+                usedVehicles.add(vehicle);
+
+                List<Customer> newRoute = it.next();
+                it.remove();
+
+                vehicle.getCustomerList().addAll(newRoute);
+                int truncatePosition = newRoute.size();
+                Customer firstDemandViolation = vehicle.getFirstDemandViolation();
+                if (firstDemandViolation != null) {
+                    truncatePosition = newRoute.indexOf(firstDemandViolation);
+                }
+                Customer firstServiceTimeViolation = vehicle.getFirstServiceTimeViolation();
+                if (firstServiceTimeViolation != null) {
+                    truncatePosition = Math.min(truncatePosition, newRoute.indexOf(firstServiceTimeViolation));
+                }
+
+                if (truncatePosition < newRoute.size()) {
+                    vehicle.getCustomerList().clear();
+                    List<Customer> newFeasibleRoute = newRoute.subList(0, truncatePosition);
+                    unroutedCustomers.removeAll(newFeasibleRoute);
+                    vehicle.getCustomerList().addAll(newFeasibleRoute);
+                    newRoutes.add(newRoute.subList(truncatePosition, newRoute.size()));
+                }
+
+            }
+
+            // add unrouted customers
+
+            for (Iterator<Customer> it = unroutedCustomers.iterator(); it.hasNext();) {
+                Customer customer = it.next();
+
+                long bestDeltaDistance = Long.MAX_VALUE;
+                Vehicle bestVehicle = null;
+                List<Customer> bestSequence = null;
+
+                for (Iterator<Vehicle> it2 = usedVehicles.stream().filter(v -> customer.getDemand() <= (v.getCapacity() - v.getTotalDemand())).iterator(); it2
+                        .hasNext();) {
+                    Vehicle vehicle = it2.next();
+                    long currentDistance = vehicle.getTotalDistanceMeters();
+
+                    vehicle.getCustomerList().add(0, customer);
+
+                    long deltaDistance = vehicle.getTotalDistanceMeters() - currentDistance;
+
+                    if (!vehicle.isServiceTimeViolated() && deltaDistance < bestDeltaDistance) {
+                        bestDeltaDistance = deltaDistance;
+                        bestVehicle = vehicle;
+                        bestSequence = List.copyOf(vehicle.getCustomerList());
+                    }
+
+                    for (int i = 0; i < vehicle.getCustomerList().size() - 1; i++) {
+                        Collections.swap(vehicle.getCustomerList(), i, i + 1);
+                        deltaDistance = vehicle.getTotalDistanceMeters() - currentDistance;
+                        if (!vehicle.isServiceTimeViolated() && deltaDistance < bestDeltaDistance) {
+                            bestDeltaDistance = vehicle.getTotalDistanceMeters() - currentDistance;
+                            bestVehicle = vehicle;
+                            bestSequence = List.copyOf(vehicle.getCustomerList());
+                        }
+                    }
+                    vehicle.getCustomerList().remove(customer);
+                }
+
+                if (bestVehicle != null) {
+                    bestVehicle.getCustomerList().clear();
+                    bestVehicle.getCustomerList().addAll(bestSequence);
+                } else {
+                    Vehicle newRoute = unusedVehicles.next();
+                    newRoute.getCustomerList().add(customer);
+                    usedVehicles.add(newRoute);
+                }
             }
 
         });

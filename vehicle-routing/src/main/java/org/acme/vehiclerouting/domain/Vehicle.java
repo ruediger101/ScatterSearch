@@ -2,6 +2,7 @@ package org.acme.vehiclerouting.domain;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,9 +24,7 @@ public class Vehicle {
         if (this == other)
             return true;
 
-        return depot.getId() == other.getDepot().getId()
-                && capacity == other.getCapacity()
-                && fixCost == other.getFixCost()
+        return depot.getId() == other.getDepot().getId() && capacity == other.getCapacity() && fixCost == other.getFixCost()
                 && this.getCustomerIds().equals(other.getCustomerIds());
     }
 
@@ -108,20 +107,25 @@ public class Vehicle {
         List<Location> route = new ArrayList<>();
 
         route.add(depot.getLocation());
-        for (Customer customer : customerList) {
-            route.add(customer.getLocation());
-        }
+        route.addAll(customerList.stream().map(Customer::getLocation).collect(Collectors.toList()));
         route.add(depot.getLocation());
 
         return route;
     }
 
     public int getTotalDemand() {
+        return customerList.stream().mapToInt(Customer::getDemand).sum();
+    }
+
+    public Customer getFirstDemandViolation() {
         int totalDemand = 0;
-        for (Customer customer : customerList) {
+        for (Iterator<Customer> it = customerList.iterator(); it.hasNext();) {
+            Customer customer = it.next();
             totalDemand += customer.getDemand();
+            if (totalDemand > capacity)
+                return customer;
         }
-        return totalDemand;
+        return null;
     }
 
     public long getTotalDistanceMeters() {
@@ -167,19 +171,27 @@ public class Vehicle {
             return false;
         }
 
+        return getFirstServiceTimeViolation() != null;
+    }
+
+    public Customer getFirstServiceTimeViolation() {
+        if (customerList.isEmpty()) {
+            return null;
+        }
+
         long currentTime = 0;
         Location previousLocation = depot.getLocation();
 
         for (Customer customer : customerList) {
             currentTime += previousLocation.getDistanceTo(customer.getLocation());
             if (currentTime > customer.getEndServiceWindow()) {
-                return true;
+                return customer;
             }
             currentTime += Math.max(currentTime, customer.getBeginServiceWindow()) + customer.getServiceTime();
             previousLocation = customer.getLocation();
         }
 
-        return false;
+        return null;
     }
 
     public long getTotalTime() {
@@ -201,8 +213,6 @@ public class Vehicle {
 
     @Override
     public String toString() {
-        return "Vehicle{" +
-                "id=" + id +
-                '}';
+        return "Vehicle{" + "id=" + id + '}';
     }
 }
