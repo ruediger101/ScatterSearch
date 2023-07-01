@@ -29,12 +29,19 @@ public class VehicleRoutingSolutionsRepository {
     private int refSetSize = 20;
     private List<Solution> vehicleRoutingSolutions = new ArrayList<>();
 
+    private Set<Integer> checkedRoutes = new HashSet<>();
+
     public boolean isIntialPopulation() {
         return initialPopulation && time == 0;
     }
 
     public void add(VehicleRoutingSolution vehicleRoutingSolution) {
-        this.vehicleRoutingSolutions.add(new Solution(vehicleRoutingSolution, time));
+        int hashCode = vehicleRoutingSolution.getVehicleList().stream().map(Vehicle::getCustomerList).filter(l -> !l.isEmpty()).collect(Collectors.toSet())
+                .hashCode();
+        if (!checkedRoutes.contains(hashCode)) {
+            this.vehicleRoutingSolutions.add(new Solution(vehicleRoutingSolution, time));
+            checkedRoutes.add(hashCode);
+        }
     }
 
     public void addAll(List<VehicleRoutingSolution> vehicleRoutingSolutions) {
@@ -197,7 +204,12 @@ public class VehicleRoutingSolutionsRepository {
                 String name = set.stream().map(s -> s.getVehicleRoutingSolution().getName()).collect(Collectors.joining(")+(", "(", ")"));
                 Solution newSolution = new Solution(new VehicleRoutingSolution(name, set.iterator().next().getVehicleRoutingSolution(), false), time);
                 checkAndRestoreFeasibility(newSolution, newRoutes);
-                combinedSolutions.add(newSolution);
+
+                int hashCode = newSolution.getVehicleRoutingSolution().getVehicleList().stream().map(Vehicle::getCustomerList).filter(l -> !l.isEmpty())
+                        .collect(Collectors.toSet()).hashCode();
+
+                if (!checkedRoutes.contains(hashCode))
+                    combinedSolutions.add(newSolution);
             }
 
         });
