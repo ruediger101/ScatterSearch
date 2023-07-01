@@ -24,9 +24,14 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class VehicleRoutingSolutionsRepository {
 
     private int time = 0;
+    private boolean initialPopulation = true;
 
     private int refSetSize = 20;
     private List<Solution> vehicleRoutingSolutions = new ArrayList<>();
+
+    public boolean isIntialPopulation() {
+        return initialPopulation && time == 0;
+    }
 
     public void add(VehicleRoutingSolution vehicleRoutingSolution) {
         this.vehicleRoutingSolutions.add(new Solution(vehicleRoutingSolution, time));
@@ -58,8 +63,7 @@ public class VehicleRoutingSolutionsRepository {
         }
     }
 
-    public void createRefSet() {
-        sortVehicleRoutingSolutions();
+    private void createRefSet() {
 
         List<Solution> refSet = vehicleRoutingSolutions.subList(0, refSetSize / 2);
 
@@ -73,12 +77,17 @@ public class VehicleRoutingSolutionsRepository {
         }
 
         vehicleRoutingSolutions = refSet;
+        initialPopulation = false;
     }
 
     public void updateRefSet() {
         sortVehicleRoutingSolutions();
 
-        vehicleRoutingSolutions = vehicleRoutingSolutions.subList(0, refSetSize);
+        if (initialPopulation) {
+            createRefSet();
+        } else {
+            vehicleRoutingSolutions = vehicleRoutingSolutions.subList(0, refSetSize);
+        }
     }
 
     private void sortVehicleRoutingSolutions() {
@@ -146,13 +155,9 @@ public class VehicleRoutingSolutionsRepository {
 
     public Set<Solution> combineSolutions(Set<Set<Solution>> subSets) {
         Set<Solution> combinedSolutions = new HashSet<>();
+        Set<Set<List<Customer>>> allNewRoutes = new HashSet<>();
 
         subSets.stream().forEach(set -> {
-            String name = set.stream().map(s -> s.getVehicleRoutingSolution().getName()).collect(Collectors.joining(")+(", "(", ")"));
-            Solution newSolution = new Solution(new VehicleRoutingSolution(name, set.iterator().next().getVehicleRoutingSolution()), time);
-            newSolution.getVehicleRoutingSolution().getVehicleList().forEach(v -> v.getCustomerList().clear());
-            combinedSolutions.add(newSolution);
-
             Map<Solution, Long> solutionDistanceMap = set.stream()
                     .collect(Collectors.toMap(Function.identity(), solution -> solution.getVehicleRoutingSolution().getDistanceMeters()));
             double summedDistance = solutionDistanceMap.values().stream().mapToLong(Long::longValue).sum();
@@ -187,7 +192,13 @@ public class VehicleRoutingSolutionsRepository {
 
             Set<List<Customer>> newRoutes = combineArcs(weightedFilteredSortedArcs);
 
-            checkAndRestoreFeasibility(newSolution, newRoutes);
+            if (!newRoutes.isEmpty() && !allNewRoutes.contains(newRoutes)) {
+                allNewRoutes.add(newRoutes);
+                String name = set.stream().map(s -> s.getVehicleRoutingSolution().getName()).collect(Collectors.joining(")+(", "(", ")"));
+                Solution newSolution = new Solution(new VehicleRoutingSolution(name, set.iterator().next().getVehicleRoutingSolution(), false), time);
+                checkAndRestoreFeasibility(newSolution, newRoutes);
+                combinedSolutions.add(newSolution);
+            }
 
         });
 
@@ -236,7 +247,7 @@ public class VehicleRoutingSolutionsRepository {
                 }
             }
             // remove route from and to depot if added.
-            newRoute.removeAll(null);
+            newRoute.removeAll(Collections.singleton(null));
             newRoutes.add(newRoute);
         }
         return newRoutes;
@@ -246,7 +257,8 @@ public class VehicleRoutingSolutionsRepository {
         Iterator<Vehicle> unusedVehicles = new ArrayList<>(newSolution.getVehicleRoutingSolution().getVehicleList()).iterator();
         List<Vehicle> usedVehicles = new ArrayList<>();
         List<Customer> unroutedCustomers = new ArrayList<>(newSolution.getVehicleRoutingSolution().getCustomerList());
-        for (Iterator<List<Customer>> it = newRoutes.iterator(); it.hasNext(); it = newRoutes.iterator()) {
+        Set<List<Customer>> tempRoutes = new HashSet<>(newRoutes);
+        for (Iterator<List<Customer>> it = tempRoutes.iterator(); it.hasNext(); it = tempRoutes.iterator()) {
             Vehicle vehicle = unusedVehicles.next();
             unusedVehicles.remove();
             usedVehicles.add(vehicle);
@@ -270,13 +282,14 @@ public class VehicleRoutingSolutionsRepository {
                 List<Customer> newFeasibleRoute = newRoute.subList(0, truncatePosition);
                 unroutedCustomers.removeAll(newFeasibleRoute);
                 vehicle.getCustomerList().addAll(newFeasibleRoute);
-                newRoutes.add(newRoute.subList(truncatePosition, newRoute.size()));
+                tempRoutes.add(newRoute.subList(truncatePosition, newRoute.size()));
+            } else {
+                unroutedCustomers.removeAll(newRoute);
             }
 
         }
 
         // add unrouted customers
-
         for (Iterator<Customer> it = unroutedCustomers.iterator(); it.hasNext();) {
             Customer customer = it.next();
 
@@ -323,8 +336,9 @@ public class VehicleRoutingSolutionsRepository {
     }
 
     public Set<Solution> generateNewSolutions() {
-        time++;
-        return combineSolutions(getSubSets());
+        Set<Solution> newSolutions = combineSolutions(getSubSets());
+        vehicleRoutingSolutions.addAll(newSolutions);
+        return newSolutions;
     }
 
     public List<Solution> getSolutions() {

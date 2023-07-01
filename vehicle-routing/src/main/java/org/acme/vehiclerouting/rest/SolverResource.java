@@ -1,7 +1,7 @@
 package org.acme.vehiclerouting.rest;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -30,8 +30,7 @@ public class SolverResource {
     private final SolverManager<VehicleRoutingSolution, Long> solverManager;
     private final SolutionManager<VehicleRoutingSolution, HardSoftLongScore> solutionManager;
 
-    public SolverResource(VehicleRoutingSolutionsRepository repository,
-            SolverManager<VehicleRoutingSolution, Long> solverManager,
+    public SolverResource(VehicleRoutingSolutionsRepository repository, SolverManager<VehicleRoutingSolution, Long> solverManager,
             SolutionManager<VehicleRoutingSolution, HardSoftLongScore> solutionManager) {
         this.repository = repository;
         this.solverManager = solverManager;
@@ -40,8 +39,7 @@ public class SolverResource {
 
     private Status statusFromSolution(VehicleRoutingSolution solution) {
         return new Status(solution, solutionManager.explain(solution).getSummary(),
-                this.repository.getSolutions().stream().map(Solution::getId).map(solverManager::getSolverStatus)
-                        .distinct().collect(Collectors.toSet()),
+                this.repository.getSolutions().stream().map(Solution::getId).map(solverManager::getSolverStatus).distinct().collect(Collectors.toSet()),
                 this.repository.getBestSolution().map(s -> s.getId()).orElse(0L));
     }
 
@@ -59,20 +57,19 @@ public class SolverResource {
     @POST
     @Path("solve")
     public void solve() {
-        List<Solution> notOptimizedSolutions = repository.getNotOptimizedSolutions();
-        if (!notOptimizedSolutions.isEmpty())
-            notOptimizedSolutions
-                    .forEach(s -> solverManager.solveAndListen(s.getId(), problemId -> s.getVehicleRoutingSolution(),
-                            s::setVehicleRoutingSolution, (problemId, throwable) -> solverError.set(throwable)));
-        else {
+        if (repository.isIntialPopulation()) {
+            repository.getSolutions().forEach(s -> solverManager.solveAndListen(s.getId(), problemId -> s.getVehicleRoutingSolution(),
+                    s::setVehicleRoutingSolution, (problemId, throwable) -> solverError.set(throwable)));
+            repository.incrementTime();
+        } else {
             // ensure refSet has proper content and size
-            if (repository.getTime() == 0)
-                repository.createRefSet();
-            else
-                repository.updateRefSet();
+            repository.updateRefSet();
+            Set<Solution> newSolutions = repository.generateNewSolutions();
+            System.err.println("new solutions: " + newSolutions.size());
 
-            repository.generateNewSolutions();
-
+            newSolutions.forEach(s -> solverManager.solveAndListen(s.getId(), problemId -> s.getVehicleRoutingSolution(), s::setVehicleRoutingSolution,
+                    (problemId, throwable) -> solverError.set(throwable)));
+            repository.incrementTime();
         }
 
     }

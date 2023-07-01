@@ -31,9 +31,10 @@ public class Vehicle {
     public Vehicle() {
     }
 
-    public Vehicle(Vehicle old) {
+    public Vehicle(Vehicle old, boolean keepCustomers) {
         this(old.id, old.capacity, old.depot, old.fixCost);
-        this.customerList.addAll(old.customerList);
+        if (keepCustomers)
+            this.customerList.addAll(old.customerList);
     }
 
     public Vehicle(long id, int capacity, Depot depot, int fixCost) {

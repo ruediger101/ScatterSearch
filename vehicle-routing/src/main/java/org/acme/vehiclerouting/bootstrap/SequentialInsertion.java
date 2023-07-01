@@ -32,8 +32,7 @@ public class SequentialInsertion {
         return solve(solution, numberSolutions, false);
     }
 
-    public static List<VehicleRoutingSolution> solve(VehicleRoutingSolution solution, int numberSolutions,
-            boolean randomize) {
+    public static List<VehicleRoutingSolution> solve(VehicleRoutingSolution solution, int numberSolutions, boolean randomize) {
         if (solution == null)
             return Collections.emptyList();
 
@@ -75,18 +74,16 @@ public class SequentialInsertion {
             compatibilityMap.put(a, compatibility);
         }
 
-        List<Customer> sortedTwc = twcMap.entrySet().stream().filter(e -> e.getValue() > 0)
-                .sorted((j, i) -> Integer.compare(i.getValue(), j.getValue())).map(Entry::getKey)
-                .collect(Collectors.toList());
-        List<Customer> sortedCompatibility = compatibilityMap.entrySet().stream()
-                .filter(e -> !sortedTwc.contains(e.getKey())).sorted((i, j) -> Long.compare(i.getValue(), j.getValue()))
+        List<Customer> sortedTwc = twcMap.entrySet().stream().filter(e -> e.getValue() > 0).sorted((j, i) -> Integer.compare(i.getValue(), j.getValue()))
                 .map(Entry::getKey).collect(Collectors.toList());
+        List<Customer> sortedCompatibility = compatibilityMap.entrySet().stream().filter(e -> !sortedTwc.contains(e.getKey()))
+                .sorted((i, j) -> Long.compare(i.getValue(), j.getValue())).map(Entry::getKey).collect(Collectors.toList());
 
         List<VehicleRoutingSolution> initalPopulation = new ArrayList<>();
 
         for (int i = 1; i <= numberSolutions; i++) {
             // Start of new Solution
-            VehicleRoutingSolution newSolution = new VehicleRoutingSolution(solution.getName() + "_" + i, solution);
+            VehicleRoutingSolution newSolution = new VehicleRoutingSolution(solution.getName() + "_" + i, solution, false);
 
             // list sorted by TWC and compatibility criterion
             List<Customer> unroutedCustomers = new ArrayList<>(sortedTwc);
@@ -95,8 +92,7 @@ public class SequentialInsertion {
             Iterator<Vehicle> it = newSolution.getVehicleList().iterator();
             while (!unroutedCustomers.isEmpty() && it.hasNext()) {
                 Vehicle vehicle = it.next();
-                int index = randomize ? (int) (Math.exp(rand.nextDouble() * Math.log(unroutedCustomers.size())) - 1.0)
-                        : 0;
+                int index = randomize ? (int) (Math.exp(rand.nextDouble() * Math.log(unroutedCustomers.size())) - 1.0) : 0;
                 vehicle.getCustomerList().add(unroutedCustomers.remove(index));
                 populateRoute(unroutedCustomers, vehicle, randomize);
             }
@@ -113,16 +109,14 @@ public class SequentialInsertion {
         long latestArrival = c1.getEndServiceWindow() + deltaTime;
 
         if (earliestArrival < c2.getEndServiceWindow()) {
-            return Math.min(latestArrival, c2.getEndServiceWindow())
-                    - Math.max(earliestArrival, c2.getBeginServiceWindow());
+            return Math.min(latestArrival, c2.getEndServiceWindow()) - Math.max(earliestArrival, c2.getBeginServiceWindow());
         } else {
             return Long.MIN_VALUE;
         }
     }
 
     public static void populateRoute(List<Customer> unroutedCustomers, Vehicle vehicle, boolean randomize) {
-        List<Customer> feasibleCustomers = unroutedCustomers.stream()
-                .filter(c -> c.getDemand() <= (vehicle.getCapacity() - vehicle.getTotalDemand()))
+        List<Customer> feasibleCustomers = unroutedCustomers.stream().filter(c -> c.getDemand() <= (vehicle.getCapacity() - vehicle.getTotalDemand()))
                 .collect(Collectors.toList());
 
         while (!feasibleCustomers.isEmpty()) {
@@ -142,8 +136,7 @@ public class SequentialInsertion {
 
                 long deltaDistance = vehicle.getTotalDistanceMeters() - currentDistance;
 
-                if (!vehicle.isServiceTimeViolated() && deltaDistance < bestDeltaDistance
-                        && (!randomize || randInt.nextInt() > ACCEPTANCE_THRESHOLD)) {
+                if (!vehicle.isServiceTimeViolated() && deltaDistance < bestDeltaDistance && (!randomize || randInt.nextInt() > ACCEPTANCE_THRESHOLD)) {
                     bestDeltaDistance = deltaDistance;
                     bestCustomer = customer;
                     bestSequence = List.copyOf(vehicle.getCustomerList());
@@ -152,8 +145,7 @@ public class SequentialInsertion {
                 for (int i = 0; i < vehicle.getCustomerList().size() - 1; i++) {
                     Collections.swap(vehicle.getCustomerList(), i, i + 1);
                     deltaDistance = vehicle.getTotalDistanceMeters() - currentDistance;
-                    if (!vehicle.isServiceTimeViolated() && deltaDistance < bestDeltaDistance
-                            && (!randomize || randInt.nextInt() > ACCEPTANCE_THRESHOLD)) {
+                    if (!vehicle.isServiceTimeViolated() && deltaDistance < bestDeltaDistance && (!randomize || randInt.nextInt() > ACCEPTANCE_THRESHOLD)) {
                         bestDeltaDistance = vehicle.getTotalDistanceMeters() - currentDistance;
                         bestCustomer = customer;
                         bestSequence = List.copyOf(vehicle.getCustomerList());
@@ -171,8 +163,7 @@ public class SequentialInsertion {
             unroutedCustomers.remove(bestCustomer);
             vehicle.getCustomerList().clear();
             vehicle.getCustomerList().addAll(bestSequence);
-            feasibleCustomers = unroutedCustomers.stream()
-                    .filter(c -> c.getDemand() <= (vehicle.getCapacity() - vehicle.getTotalDemand()))
+            feasibleCustomers = unroutedCustomers.stream().filter(c -> c.getDemand() <= (vehicle.getCapacity() - vehicle.getTotalDemand()))
                     .collect(Collectors.toList());
         }
     }
