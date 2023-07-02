@@ -23,7 +23,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class VehicleRoutingSolutionsRepository {
 
-    private int time = 0;
+    private int iteration = 0;
     private boolean initialPopulation = true;
 
     private int refSetSize = 20;
@@ -31,15 +31,18 @@ public class VehicleRoutingSolutionsRepository {
 
     private Set<Integer> checkedRoutes = new HashSet<>();
 
+    private double initialRefSetDivisionFactor = 2.0;
+    private double refSetDivisionFactor = 1.0;
+
     public boolean isIntialPopulation() {
-        return initialPopulation && time == 0;
+        return initialPopulation && iteration == 0;
     }
 
     public void add(VehicleRoutingSolution vehicleRoutingSolution) {
         int hashCode = vehicleRoutingSolution.getVehicleList().stream().map(Vehicle::getCustomerList).filter(l -> !l.isEmpty()).collect(Collectors.toSet())
                 .hashCode();
         if (!checkedRoutes.contains(hashCode)) {
-            this.vehicleRoutingSolutions.add(new Solution(vehicleRoutingSolution, time));
+            this.vehicleRoutingSolutions.add(new Solution(vehicleRoutingSolution, iteration));
             checkedRoutes.add(hashCode);
         }
     }
@@ -48,12 +51,28 @@ public class VehicleRoutingSolutionsRepository {
         vehicleRoutingSolutions.forEach(this::add);
     }
 
-    public void incrementTime() {
-        time++;
+    public void incrementIteration() {
+        iteration++;
     }
 
-    public int getTime() {
-        return time;
+    public int getIteration() {
+        return iteration;
+    }
+
+    public void setInitialRefSetDivisionFactor(double factor) {
+        this.initialRefSetDivisionFactor = factor;
+    }
+
+    public double getInitialRefSetDivisionFactor() {
+        return this.initialRefSetDivisionFactor;
+    }
+
+    public void setRefSetDivisionFactor(double factor) {
+        this.refSetDivisionFactor = factor;
+    }
+
+    public double getRefSetDivisionFactor() {
+        return this.refSetDivisionFactor;
     }
 
     public class DistanceSolutionTuple {
@@ -84,34 +103,30 @@ public class VehicleRoutingSolutionsRepository {
 
     }
 
-    private void createRefSet(double divisionFactor) {
-
-        List<Solution> refSet = vehicleRoutingSolutions.subList(0, (int) (refSetSize / divisionFactor));
-
-        List<DistanceSolutionTuple> diverseCandidates = vehicleRoutingSolutions.subList((int) (refSetSize / divisionFactor), vehicleRoutingSolutions.size())
-                .stream().map(s -> new DistanceSolutionTuple(s, refSet)).sorted((i, j) -> Integer.compare(j.distance, i.distance)).collect(Collectors.toList());
-
-        while (refSet.size() < refSetSize && !diverseCandidates.isEmpty()) {
-            DistanceSolutionTuple removed = diverseCandidates.remove(0);
-            refSet.add(removed.solution);
-            diverseCandidates.forEach(c -> c.updateDistance(removed.solution));
-        }
-
-        vehicleRoutingSolutions = refSet;
-        initialPopulation = false;
-    }
-
     public void updateRefSet() {
         sortVehicleRoutingSolutions();
         removeDuplicateSolutions();
+        double divisionFactor = initialPopulation ? initialRefSetDivisionFactor : refSetDivisionFactor;
 
-        if (initialPopulation) {
-            createRefSet(2.0);
-        } else {
+        if (divisionFactor == 1.0) {
             vehicleRoutingSolutions = vehicleRoutingSolutions.subList(0, refSetSize);
+        } else {
 
-            // createRefSet(1.3);
+            List<Solution> refSet = vehicleRoutingSolutions.subList(0, (int) (refSetSize / divisionFactor));
+
+            List<DistanceSolutionTuple> diverseCandidates = vehicleRoutingSolutions.subList((int) (refSetSize / divisionFactor), vehicleRoutingSolutions.size())
+                    .stream().map(s -> new DistanceSolutionTuple(s, refSet)).sorted((i, j) -> Integer.compare(j.distance, i.distance))
+                    .collect(Collectors.toList());
+
+            while (refSet.size() < refSetSize && !diverseCandidates.isEmpty()) {
+                DistanceSolutionTuple removed = diverseCandidates.remove(0);
+                refSet.add(removed.solution);
+                diverseCandidates.forEach(c -> c.updateDistance(removed.solution));
+            }
+
+            vehicleRoutingSolutions = refSet;
         }
+        initialPopulation = false;
     }
 
     private void sortVehicleRoutingSolutions() {
@@ -129,7 +144,7 @@ public class VehicleRoutingSolutionsRepository {
 
             for (Iterator<Solution> it2 = solutionSet.iterator(); it2.hasNext();) {
                 Solution s2 = it2.next();
-                if (s1.getLastUpdate() < time || s2.getLastUpdate() < time) {
+                if (s1.getLastUpdate() < iteration || s2.getLastUpdate() < iteration) {
                     Set<Solution> subSet = new HashSet<>();
                     subSet.add(s1);
                     subSet.add(s2);
@@ -206,7 +221,7 @@ public class VehicleRoutingSolutionsRepository {
             if (!newRoutes.isEmpty() && !allNewRoutes.contains(newRoutes)) {
                 allNewRoutes.add(newRoutes);
                 String name = set.stream().map(s -> s.getVehicleRoutingSolution().getName()).collect(Collectors.joining(")+(", "(", ")"));
-                Solution newSolution = new Solution(new VehicleRoutingSolution(name, set.iterator().next().getVehicleRoutingSolution(), false), time);
+                Solution newSolution = new Solution(new VehicleRoutingSolution(name, set.iterator().next().getVehicleRoutingSolution(), false), iteration);
                 checkAndRestoreFeasibility(newSolution, newRoutes);
 
                 int hashCode = newSolution.getVehicleRoutingSolution().getVehicleList().stream().map(Vehicle::getCustomerList).filter(l -> !l.isEmpty())
@@ -367,16 +382,19 @@ public class VehicleRoutingSolutionsRepository {
             if (useScore)
                 return j.getVehicleRoutingSolution().getScore().compareTo(i.getVehicleRoutingSolution().getScore());
             else {
-                return Long.compare(
+                int result = Long.compare(
                         i.getVehicleRoutingSolution().getDistanceMeters()
                                 + i.getVehicleRoutingSolution().getUsedVehicleList().stream().mapToInt(Vehicle::getFixCost).sum(),
                         j.getVehicleRoutingSolution().getDistanceMeters()
                                 + j.getVehicleRoutingSolution().getUsedVehicleList().stream().mapToInt(Vehicle::getFixCost).sum());
+                if (result == 0)
+                    result = Long.compare(i.getId(), j.getId());
+                return result;
             }
         }).findFirst();
     }
 
     public List<Solution> getNotOptimizedSolutions() {
-        return vehicleRoutingSolutions.stream().filter(s -> s.getLastUpdate() == this.time).collect(Collectors.toList());
+        return vehicleRoutingSolutions.stream().filter(s -> s.getLastUpdate() == this.iteration).collect(Collectors.toList());
     }
 }

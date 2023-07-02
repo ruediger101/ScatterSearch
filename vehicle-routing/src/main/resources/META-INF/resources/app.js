@@ -140,8 +140,8 @@ const updateSolvingStatus = (solving) => {
   if (solving) {
     solveButton.hide();
     stopSolvingButton.show();
+    autoRefreshCount = 40;
   } else {
-    autoRefreshCount = 0;
     solveButton.show();
     stopSolvingButton.hide();
   }
@@ -189,7 +189,7 @@ const getCustomerMarker = ({ id, location }) => {
   return marker;
 };
 
-const showProblem = ({ solution, scoreExplanation, isSolving , idBestSolution}) => {
+const showProblem = ({ solution, scoreExplanation, isSolving , idBestSolution, solutionIteration, currentIteration}) => {
   if (!initialized) {
     initialized = true;
     map.fitBounds(solution.bounds);
@@ -262,6 +262,8 @@ const showProblem = ({ solution, scoreExplanation, isSolving , idBestSolution}) 
 
   // Summary
   $('#solutionId').text(idBestSolution);
+  $('#solutionIteration').text(solutionIteration);
+  $('#currentIteration').text(currentIteration);
   $('#score').text(solution.score);
   $('#scoreInfo').text(scoreExplanation);
   $('#distance').text(formatDistance(solution.distanceMeters));
