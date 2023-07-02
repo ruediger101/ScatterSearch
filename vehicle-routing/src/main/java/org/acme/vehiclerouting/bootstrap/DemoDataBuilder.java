@@ -18,7 +18,10 @@ import org.acme.vehiclerouting.domain.geo.EuclideanDistanceCalculator;
 
 public class DemoDataBuilder {
 
-    private static final AtomicLong sequence = new AtomicLong();
+    private static final AtomicLong depotSequence = new AtomicLong();
+    private static final AtomicLong customerSequence = new AtomicLong();
+    private static final AtomicLong vehicleSequence = new AtomicLong();
+    private static final AtomicLong locationSequence = new AtomicLong();
 
     private final DistanceCalculator distanceCalculator = new EuclideanDistanceCalculator();
 
@@ -186,18 +189,18 @@ public class DemoDataBuilder {
 
         PrimitiveIterator.OfInt depotRandom = random.ints(0, depotCount).iterator();
 
-        Supplier<Depot> depotSupplier = () -> new Depot(sequence.incrementAndGet(),
-                new Location(sequence.incrementAndGet(), 49.46069, 11.08332));
+        Supplier<Depot> depotSupplier = () -> new Depot(depotSequence.incrementAndGet(),
+                new Location(locationSequence.incrementAndGet(), 49.46069, 11.08332));
 
         List<Depot> depotList = Stream.generate(depotSupplier).limit(depotCount).collect(Collectors.toList());
 
-        Supplier<Vehicle> vehicleSupplier = () -> new Vehicle(sequence.incrementAndGet(), vehicleCapacity,
+        Supplier<Vehicle> vehicleSupplier = () -> new Vehicle(vehicleSequence.incrementAndGet(), vehicleCapacity,
                 depotList.get(depotRandom.nextInt()), vehicleFixCost);
 
         List<Vehicle> vehicleList = Stream.generate(vehicleSupplier).limit(vehicleCount).collect(Collectors.toList());
 
-        Supplier<Customer> customerSupplier = () -> new Customer(sequence.incrementAndGet(),
-                new Location(sequence.incrementAndGet(), latitudes.nextDouble(), longitudes.nextDouble()),
+        Supplier<Customer> customerSupplier = () -> new Customer(customerSequence.incrementAndGet(),
+                new Location(locationSequence.incrementAndGet(), latitudes.nextDouble(), longitudes.nextDouble()),
                 demand.nextInt(), serviceTime.nextInt(), serviceWindow.nextInt(), serviceWindow.nextInt());
 
         List<Customer> customerList = Stream.generate(customerSupplier).limit(customerCount)
