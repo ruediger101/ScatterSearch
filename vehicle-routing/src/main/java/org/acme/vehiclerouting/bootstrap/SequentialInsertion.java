@@ -19,7 +19,7 @@ public class SequentialInsertion {
     private SequentialInsertion() {
     }
 
-    private static Random rand = new Random(System.currentTimeMillis());
+    private static Random rand = new Random(42);
     private static OfInt randInt = rand.ints(99, 100).iterator();
     private static final int ACCEPTANCE_THRESHOLD = 95;
 
