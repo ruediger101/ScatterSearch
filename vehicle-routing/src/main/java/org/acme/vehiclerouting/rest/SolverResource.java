@@ -61,6 +61,7 @@ public class SolverResource {
     public void solve() {
         repository.setInitialRefSetDivisionFactor(2.0);
         repository.setRefSetDivisionFactor(1.0);
+        repository.setRefSetSize(20);
         new Thread(() -> {
             long start = System.currentTimeMillis();
             while ((System.currentTimeMillis() - start) < 300 * 1e3) {
