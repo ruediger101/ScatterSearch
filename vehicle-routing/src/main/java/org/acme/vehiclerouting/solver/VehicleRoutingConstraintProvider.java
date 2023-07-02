@@ -43,8 +43,7 @@ public class VehicleRoutingConstraintProvider implements ConstraintProvider {
 
         protected Constraint vehicleInUse(ConstraintFactory factory) {
                 return factory.forEach(Vehicle.class)
-                                .filter(vehicle -> vehicle.getTotalDemand() > 0)
-                                .penalizeLong(HardSoftLongScore.ONE_SOFT, Vehicle::getFixCost)
+                                .penalizeLong(HardSoftLongScore.ONE_SOFT, Vehicle::getCurrentFixCost)
                                 .asConstraint("fixCost");
         }
 
