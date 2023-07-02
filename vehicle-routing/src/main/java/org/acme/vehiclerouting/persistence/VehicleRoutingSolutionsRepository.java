@@ -84,12 +84,12 @@ public class VehicleRoutingSolutionsRepository {
 
     }
 
-    private void createRefSet() {
+    private void createRefSet(double divisionFactor) {
 
-        List<Solution> refSet = vehicleRoutingSolutions.subList(0, refSetSize / 2);
+        List<Solution> refSet = vehicleRoutingSolutions.subList(0, (int) (refSetSize / divisionFactor));
 
-        List<DistanceSolutionTuple> diverseCandidates = vehicleRoutingSolutions.subList(refSetSize / 2, vehicleRoutingSolutions.size()).stream()
-                .map(s -> new DistanceSolutionTuple(s, refSet)).sorted((i, j) -> Integer.compare(j.distance, i.distance)).collect(Collectors.toList());
+        List<DistanceSolutionTuple> diverseCandidates = vehicleRoutingSolutions.subList((int) (refSetSize / divisionFactor), vehicleRoutingSolutions.size())
+                .stream().map(s -> new DistanceSolutionTuple(s, refSet)).sorted((i, j) -> Integer.compare(j.distance, i.distance)).collect(Collectors.toList());
 
         while (refSet.size() < refSetSize && !diverseCandidates.isEmpty()) {
             DistanceSolutionTuple removed = diverseCandidates.remove(0);
@@ -106,9 +106,11 @@ public class VehicleRoutingSolutionsRepository {
         removeDuplicateSolutions();
 
         if (initialPopulation) {
-            createRefSet();
+            createRefSet(2.0);
         } else {
             vehicleRoutingSolutions = vehicleRoutingSolutions.subList(0, refSetSize);
+
+            // createRefSet(1.3);
         }
     }
 
@@ -261,7 +263,7 @@ public class VehicleRoutingSolutionsRepository {
                 }
             }
             // remove route from and to depot if added.
-            newRoute.removeAll(Collections.singleton(null));
+            newRoute.removeIf(Objects::isNull);
             newRoutes.add(newRoute);
         }
         return newRoutes;
