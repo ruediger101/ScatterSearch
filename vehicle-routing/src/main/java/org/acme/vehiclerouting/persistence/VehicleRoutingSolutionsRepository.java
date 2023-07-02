@@ -84,16 +84,16 @@ public class VehicleRoutingSolutionsRepository {
     }
 
     public class DistanceSolutionTuple {
-        private int distance = 0; // used to store distance to referenceSet during selection
+        private int similarity = 0; // used to store distance to referenceSet during selection
         private Solution solution;
 
         DistanceSolutionTuple(Solution solution, Collection<Solution> referenceSet) {
             this.solution = solution;
-            this.distance = referenceSet.stream().mapToInt(this.solution::noCommonArcs).min().orElse(0);
+            this.similarity = referenceSet.stream().mapToInt(this.solution::noCommonArcs).max().orElse(0);
         }
 
-        public void updateDistance(Solution otherSolution) {
-            distance = Math.min(distance, solution.noCommonArcs(otherSolution));
+        public void updateSimilarity(Solution otherSolution) {
+            similarity = Math.max(similarity, solution.noCommonArcs(otherSolution));
         }
     }
 
@@ -123,13 +123,14 @@ public class VehicleRoutingSolutionsRepository {
             List<Solution> refSet = vehicleRoutingSolutions.subList(0, (int) (refSetSize / divisionFactor));
 
             List<DistanceSolutionTuple> diverseCandidates = vehicleRoutingSolutions.subList((int) (refSetSize / divisionFactor), vehicleRoutingSolutions.size())
-                    .stream().map(s -> new DistanceSolutionTuple(s, refSet)).sorted((i, j) -> Integer.compare(j.distance, i.distance))
+                    .stream().map(s -> new DistanceSolutionTuple(s, refSet)).sorted((i, j) -> Integer.compare(i.similarity, j.similarity))
                     .collect(Collectors.toList());
 
             while (refSet.size() < refSetSize && !diverseCandidates.isEmpty()) {
                 DistanceSolutionTuple removed = diverseCandidates.remove(0);
                 refSet.add(removed.solution);
-                diverseCandidates.forEach(c -> c.updateDistance(removed.solution));
+                diverseCandidates.forEach(c -> c.updateSimilarity(removed.solution));
+                diverseCandidates.sort((i, j) -> Integer.compare(i.similarity, j.similarity));
             }
 
             vehicleRoutingSolutions = refSet;
