@@ -29,7 +29,7 @@ public class DemoDataGenerator {
                 .setCustomerCount(77)
                 .setVehicleCount(50)
                 .setDepotCount(1)
-                .setVehicleFixCost(50000)
+                .setVehicleFixCost(10000)
                 .setSouthWestCorner(new Location(0L, 49.43069, 11.03332))
                 .setNorthEastCorner(new Location(0L, 49.49069, 11.13332))
                 .build();
