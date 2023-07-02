@@ -89,6 +89,10 @@ public class Vehicle {
         return fixCost;
     }
 
+    public int getCurrentFixCost() {
+        return getTotalDemand() == 0 ? 0 : fixCost;
+    }
+
     public void setFixCost(int fixCost) {
         this.fixCost = fixCost;
     }
