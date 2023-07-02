@@ -20,8 +20,8 @@ public class SequentialInsertion {
     }
 
     private static Random rand = new Random(42);
-    private static OfInt randInt = rand.ints(99, 100).iterator();
-    private static final int ACCEPTANCE_THRESHOLD = 95;
+    private static OfInt randInt = rand.ints(1, 100).iterator();
+    private static final int ACCEPTANCE_THRESHOLD = 10;
 
     public static VehicleRoutingSolution solve(VehicleRoutingSolution solution) {
         List<VehicleRoutingSolution> solutions = solve(solution, 1);
