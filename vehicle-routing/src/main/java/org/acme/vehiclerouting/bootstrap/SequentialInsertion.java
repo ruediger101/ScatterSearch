@@ -74,6 +74,10 @@ public class SequentialInsertion {
             compatibilityMap.put(a, compatibility);
         }
 
+        // solution.getCustomerList()
+        // .forEach(c -> System.err.println("Kunde: " + c.getId() + ", TWC: " +
+        // twcMap.get(c) + ", Compatibility: " + compatibilityMap.get(c)));
+
         List<Customer> sortedTwc = twcMap.entrySet().stream().filter(e -> e.getValue() > 0).sorted((j, i) -> Integer.compare(i.getValue(), j.getValue()))
                 .map(Entry::getKey).collect(Collectors.toList());
         List<Customer> sortedCompatibility = compatibilityMap.entrySet().stream().filter(e -> !sortedTwc.contains(e.getKey()))
@@ -93,8 +97,10 @@ public class SequentialInsertion {
             while (!unroutedCustomers.isEmpty() && it.hasNext()) {
                 Vehicle vehicle = it.next();
                 int index = randomize ? (int) (Math.exp(rand.nextDouble() * Math.log(unroutedCustomers.size())) - 1.0) : 0;
+                // System.err.println("New Route with Customer: " + unroutedCustomers.get(index).getId());
                 vehicle.getCustomerList().add(unroutedCustomers.remove(index));
                 populateRoute(unroutedCustomers, vehicle, randomize);
+                // System.err.println("Finished route: " + vehicle.getCustomerList().stream().map(Customer::getId).collect(Collectors.toList()));
             }
 
             initalPopulation.add(newSolution);
@@ -159,6 +165,7 @@ public class SequentialInsertion {
                 // route could not be extended
                 return;
             }
+            // System.err.println("Enlarge Route with Customer: " + bestCustomer.getId());
 
             unroutedCustomers.remove(bestCustomer);
             vehicle.getCustomerList().clear();
