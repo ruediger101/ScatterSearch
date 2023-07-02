@@ -75,6 +75,14 @@ public class VehicleRoutingSolutionsRepository {
         return this.refSetDivisionFactor;
     }
 
+    public void setRefSetSize(int refSetSize) {
+        this.refSetSize = refSetSize;
+    }
+
+    public int getRefSetSize() {
+        return this.refSetSize;
+    }
+
     public class DistanceSolutionTuple {
         private int distance = 0; // used to store distance to referenceSet during selection
         private Solution solution;
